@@ -1,4 +1,5 @@
 from __future__ import division
+import argparse
 import sys
 import numpy as np
 from sklearn.metrics import average_precision_score as auprc
@@ -11,6 +12,7 @@ import iterutils_mm as  mm
 import iterutils as iu
 from keras.callbacks import Callback
 from keras.callbacks import ModelCheckpoint
+from subprocess import call
 
 
 def merge_generators(filename, batchsize, seqlen):
@@ -124,20 +126,37 @@ def plot_network_outputs(L, metrics):
 
 if __name__ == "__main__":
     
-    filename = sys.argv[1]
-    filename_val = sys.argv[6]
-    metrics = sys.argv[4]
-    batchsize = int(sys.argv[5])
+    parser = argparse.ArgumentParser(description="Characterize the sequence and chromatin\
+                                             predictors of induced TF binding",
+                                     prog='trainNN')
+    # adding parser arguments
+    parser.add_argument("datapath", help="Filepath or prefix to the data files")
+    parser.add_argument("val_datapath", help="Input data to be used for validation")
+    parser.add_argument("outfile", help="Filepath or prefix for storing the metrics")
+    
+    args = parser.parse_args()
+     
+    filename = args.datapath
+    filename_val = args.val_datapath
+    metrics = args.metrics_file 
+    filelen = len(filename + '.labels')
+    
+    # Parameters:
+
     seqlen = 500
-    filelen = int(sys.argv[3])
     convfilters = 240
     strides = 15
     pool_size = 15
     lstmnodes = 64
     dl1nodes = 1024
     dl2nodes = 512
-    model = keras_graphmodel(convfilters, strides, pool_size, lstmnodes, dl1nodes, dl2nodes, seqlen)
-    # training the model      
-    trained_model, L = train(model, filename, batchsize, seqlen, filelen)
+    batchsize = 512
+    
+    # Defining the network architecture
+    # model = keras_graphmodel(convfilters, strides, pool_size, lstmnodes, dl1nodes, dl2nodes, seqlen)
+
+    # Training the model    
+    # trained_model, L = train(model, filename, batchsize, seqlen, filelen)
     # plotting the training losses/prcs
-    plot_network_outputs(L, metrics)
+    # plot_network_outputs(L, metrics)
+
