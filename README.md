@@ -1,5 +1,5 @@
-### chromNN
-We develop a bimodal neural network architecture to model induced in vivo TF binding based on TF's sequence preferences and the preexisting chromatin landscape.The sequence and chromatin sub-networks are weighted by a single dense node to predict genome-wide TF binding.
+### iTF: Predicting induced TF binding given DNA sequence and preexisting chromatin data
+A bimodal neural network architecture to model induced in vivo TF binding based on TF's sequence preferences and the preexisting chromatin landscape.
 
 ### Citation (Update with BioRxiv submission)
 Characterizing the sequence and chromatin pre-determinants of induced TF binding with deep bimodal neural networks.
@@ -13,13 +13,17 @@ Characterizing the sequence and chromatin pre-determinants of induced TF binding
 
 ### Input Datasets
 The model requires three files for training:
-1. Training labels (1 training instance per line) [ Filename = Testfile.label]
-2. DNA sequence at training windows [ Filename = Testfile.seq ]
-3. Tab delimited tag counts for each input chromatin chromatin data track at training windows. [Filename = Testfile.chromtracks] 
+1. Training labels (1 training instance per line) (Format: FILENAME.label)
+   - Description: Each line in this file will be either 0 or 1.  
+2. DNA sequence at training windows (Format: FILENAME.seq)
+   - Description: The sequence can be extracted foe training windows using bedtools getfasta. Each line should contain sequence for one window. 
+3. Tab delimited tag counts for each input chromatin chromatin data track at training windows. (Format: FILENAME.chromtracks)
+   - Description: Tag counts for each chromatin data track are appended. For example, if we have tag counts over 10 binned windows and 12 chromatin tracks, each line in FILENAME.chromtracks will contain 10 * 12 columns.  
 
 ### Usage: Training networks to predict TF binding 
 #### Step 1: Run the sequence-only network
-To view help:python sequence_network.py -h
+To view help:  
+python sequence_network.py -h
 
 Required arguments: 
 - datapath: Prefix to the datafiles (For example: datapath=FILENAME, if the training files are FILENAME.seq, FILENAME.chromtracks and FILENAME.labels)  
@@ -36,7 +40,8 @@ For example:
 python sequence_network.py --batchsize 400 training_files validation_files outfile
 
 #### Step 2: Run the sequence and chromatin bimodal network  
-To view help:python bimodal_network.py -h
+To view help:  
+python bimodal_network.py -h
 
 Required arguments: 
 - datapath: Prefix to the datafiles (For example: datapath=FILENAME, if the training files are FILENAME.seq, FILENAME.chromtracks and FILENAME.labels)  
