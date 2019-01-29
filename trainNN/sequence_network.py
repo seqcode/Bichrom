@@ -127,13 +127,17 @@ def plot_network_outputs(L, metrics):
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Characterize the sequence and chromatin\
-                                             predictors of induced TF binding",
-                                     prog='trainNN')
-    # adding parser arguments
+                                             predictors of induced TF binding")
+    # adding the required parser arguments
     parser.add_argument("datapath", help="Filepath or prefix to the data files")
     parser.add_argument("val_datapath", help="Input data to be used for validation")
     parser.add_argument("outfile", help="Filepath or prefix for storing the metrics")
-    
+ 
+    # adding optional parser arguments
+    parser.add_argument("--batchsize", help="batchsize used for training", default=512)
+    parser.add_argument("--seqlen", help="input sequence length", default=500)
+    parser.add_argument("--chromsize", help="input sequence length", default=12)
+
     args = parser.parse_args()
      
     filename = args.datapath
@@ -141,16 +145,18 @@ if __name__ == "__main__":
     metrics = args.metrics_file 
     filelen = len(filename + '.labels')
     
-    # Parameters:
+    # Optional Arguments:
+    chromsize = args.chromsize
+    seqlen = args.seqlen
+    batchsize = args.batchsize
 
-    seqlen = 500
+    # Other Default Parameters:
     convfilters = 240
     strides = 15
     pool_size = 15
     lstmnodes = 64
     dl1nodes = 1024
     dl2nodes = 512
-    batchsize = 512
     
     # Defining the network architecture
     # model = keras_graphmodel(convfilters, strides, pool_size, lstmnodes, dl1nodes, dl2nodes, seqlen)
@@ -159,4 +165,3 @@ if __name__ == "__main__":
     # trained_model, L = train(model, filename, batchsize, seqlen, filelen)
     # plotting the training losses/prcs
     # plot_network_outputs(L, metrics)
-
