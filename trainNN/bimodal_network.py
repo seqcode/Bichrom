@@ -136,21 +136,42 @@ def plot_network_outputs(L, metrics):
 
 
 if __name__ == "__main__":
-    filename = sys.argv[1]
-    metrics = sys.argv[4]
+    
+    parser = argparse.ArgumentParser(description="Train a bimodal sequence and chromatin network")
+    # adding the required parser arguments
+    parser.add_argument("datapath", help="Filepath or prefix to the data files")
+    parser.add_argument("val_datapath", help="Input data to be used for validation")
+    parser.add_argument("outfile", help="Filepath or prefix for storing the metrics")
+    parser.add_argument("basemodel", help="Base sequence model used to train this network")
+
+    # adding optional parser arguments
+    parser.add_argument("--batchsize", help="batchsize used for training", default=512)
+    parser.add_argument("--seqlen", help="input sequence length", default=500)
+    parser.add_argument("--chromsize", help="input sequence length", default=12)
+
+    args = parser.parse_args()
+
+    filename = args.datapath
+    filename_val = args.val_datapath
+    metrics = args.metrics_file
+    basemodel = args.basemodel
+    filelen = len(filename + '.labels')
+
+    # Optional Arguments:
+    chromsize = args.chromsize
+    seqlen = args.seqlen
+    batchsize = args.batchsize
+ 
+    # Other Parameters
     batchsize = 400
     seqlen = 500
-    filelen = int(sys.argv[3])
     convfilters = 240
     strides = 15
     pool_size = 15
     lstmnodes = 32
     dl1nodes = 1024
     dl2nodes = 512
-    chromsize = int(sys.argv[5])
-    filename_val = sys.argv[7]  
-    # loading the basemodel: 
-    basemodel = load_model(sys.argv[6])
-    model = add_new_layers(basemodel, chromsize=chromsize)
-    trained_model, L = transfer(filename, filename_val, basemodel, model, filelen, batchsize)
-    plot_network_outputs(L, metrics)
+    
+    # model = add_new_layers(basemodel, chromsize=chromsize)
+    # trained_model, L = transfer(filename, filename_val, basemodel, model, filelen, batchsize)
+    # plot_network_outputs(L, metrics)
