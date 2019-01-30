@@ -16,7 +16,7 @@ The model requires three files for training:
 1. Training labels (1 training instance per line) (Format: FILENAME.label)
    - **Description**: Each line in this file will be either 0 or 1.  
 2. DNA sequence at training windows (Format: FILENAME.seq)
-   - **Description**: The sequence can be extracted foe training windows using bedtools getfasta. Each line should contain sequence for one window. 
+   - **Description**: Each line should contain the DNA sequence for one window. 
 3. Tab delimited tag counts for each input chromatin chromatin data track at training windows.  
 (Format: FILENAME.chromtracks)
    - **Description**: Tag counts for each chromatin data track are appended. For example, if we have tag counts over 10 binned windows and 12 chromatin tracks, each line in FILENAME.chromtracks will contain 10 * 12 columns.  
