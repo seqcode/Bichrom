@@ -2,18 +2,23 @@ from __future__ import division
 import argparse
 import sys
 import numpy as np
-from sklearn.metrics import average_precision_score as auprc
-from keras.models import Model
-from keras.layers import Dense, Dropout, Activation, concatenate, Input, LSTM
-from keras.layers import Conv1D, MaxPooling1D
-from keras.optimizers import SGD, Adam
-from keras.callbacks import EarlyStopping
-import iterutils_mm as  mm
-import iterutils as iu
-from keras.callbacks import Callback
-from keras.callbacks import ModelCheckpoint
-from subprocess import call
-
+try:
+    from sklearn.metrics import average_precision_score as auprc
+    from keras.models import Model
+    from keras.layers import Dense, Dropout, Activation, concatenate, Input, LSTM
+    from keras.layers import Conv1D, MaxPooling1D
+    from keras.optimizers import SGD, Adam
+    from keras.callbacks import EarlyStopping
+    import iterutils_mm as  mm
+    import iterutils as iu
+    from keras.callbacks import Callback
+    from keras.callbacks import ModelCheckpoint
+    from subprocess import call
+except Exception as e:
+    print e
+    print "Please make sure the module is installed"
+    print "Exiting."
+    exit()
 
 def merge_generators(filename, batchsize, seqlen):
     # need to pass these variables in order to pick mini-batches
@@ -129,14 +134,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Characterize the sequence and chromatin\
                                              predictors of induced TF binding")
     # adding the required parser arguments
-    parser.add_argument("datapath", help="Filepath or prefix to the data files")
-    parser.add_argument("val_datapath", help="Input data to be used for validation")
-    parser.add_argument("outfile", help="Filepath or prefix for storing the metrics")
+    parser.add_argument("datapath", help="Filepath/prefix for the training data")
+    parser.add_argument("val_datapath", help="Filepath/prefix for the validation data")
+    parser.add_argument("outfile", help="Filepath/prefix for storing training metrics")
  
     # adding optional parser arguments
     parser.add_argument("--batchsize", help="batchsize used for training", default=512)
     parser.add_argument("--seqlen", help="input sequence length", default=500)
-    parser.add_argument("--chromsize", help="input sequence length", default=12)
+    parser.add_argument("--chromsize", help="number of input chromatin data tracks", default=12)
 
     args = parser.parse_args()
      
@@ -159,9 +164,9 @@ if __name__ == "__main__":
     dl2nodes = 512
     
     # Defining the network architecture
-    # model = keras_graphmodel(convfilters, strides, pool_size, lstmnodes, dl1nodes, dl2nodes, seqlen)
+    model = keras_graphmodel(convfilters, strides, pool_size, lstmnodes, dl1nodes, dl2nodes, seqlen)
 
     # Training the model    
-    # trained_model, L = train(model, filename, batchsize, seqlen, filelen)
+    trained_model, L = train(model, filename, batchsize, seqlen, filelen)
     # plotting the training losses/prcs
-    # plot_network_outputs(L, metrics)
+    plot_network_outputs(L, metrics)

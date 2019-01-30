@@ -1,19 +1,28 @@
 from __future__ import division
 import sys
 import numpy as np
-import sklearn.metrics
-import sklearn.model_selection as ms
-from sklearn.metrics import average_precision_score as auprc
-# user defined module
-import iterutils as iu
-# keras imports
-from keras.callbacks import Callback
-from keras.callbacks import ModelCheckpoint
-from keras.models import Model,load_model
-from keras.layers import Dense, Dropout, Activation, Flatten, concatenate, Input, LSTM, Bidirectional
-from keras.layers import Conv1D, MaxPooling1D, Reshape, Lambda
-from keras.optimizers import SGD, Adam
-import keras.backend as K
+
+try:
+    import sklearn.metrics
+    import sklearn.model_selection as ms
+    from sklearn.metrics import average_precision_score as auprc
+    from keras.models import Model,load_model
+    from keras.layers import Dense, Dropout, Activation, Flatten, concatenate, Input, LSTM, Bidirectional
+    from keras.layers import Conv1D, MaxPooling1D, Reshape, Lambda
+    from keras.optimizers import SGD, Adam
+    import keras.backend as K
+    from keras.callbacks import EarlyStopping
+    import iterutils_mm as  mm
+    import iterutils as iu
+    from keras.callbacks import Callback
+    from keras.callbacks import ModelCheckpoint
+    from subprocess import call
+except Exception as e:
+    print e
+    print "Please make sure the module is installed"
+    print "Exiting."
+    exit()
+
 
 def merge_generators_seq(filename, batchsize, seqlen):
     X = iu.train_generator(filename + ".seq", batchsize, seqlen, "seq", "repeat")
@@ -139,15 +148,15 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Train a bimodal sequence and chromatin network")
     # adding the required parser arguments
-    parser.add_argument("datapath", help="Filepath or prefix to the data files")
-    parser.add_argument("val_datapath", help="Input data to be used for validation")
-    parser.add_argument("outfile", help="Filepath or prefix for storing the metrics")
+    parser.add_argument("datapath", help="Filepath/prefix to the training data")
+    parser.add_argument("val_datapath", help="Filepath/prefix to the validation data")
+    parser.add_argument("outfile", help="Filepath or prefix for storing the training metrics")
     parser.add_argument("basemodel", help="Base sequence model used to train this network")
 
     # adding optional parser arguments
     parser.add_argument("--batchsize", help="batchsize used for training", default=512)
     parser.add_argument("--seqlen", help="input sequence length", default=500)
-    parser.add_argument("--chromsize", help="input sequence length", default=12)
+    parser.add_argument("--chromsize", help="number of input chromatin datasets", default=12)
 
     args = parser.parse_args()
 
@@ -172,6 +181,6 @@ if __name__ == "__main__":
     dl1nodes = 1024
     dl2nodes = 512
     
-    # model = add_new_layers(basemodel, chromsize=chromsize)
-    # trained_model, L = transfer(filename, filename_val, basemodel, model, filelen, batchsize)
-    # plot_network_outputs(L, metrics)
+    model = add_new_layers(basemodel, chromsize=chromsize)
+    trained_model, L = transfer(filename, filename_val, basemodel, model, filelen, batchsize)
+    plot_network_outputs(L, metrics)
