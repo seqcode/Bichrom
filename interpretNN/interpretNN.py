@@ -26,6 +26,10 @@ from chromatin_interpretation import scores_at_states, seq_scores_at_states
 # metrics
 from relative_gain import metrics_boxplots
 
+# TF wide analysis
+from TFwide_compensation import get_activations_low_mem
+from TFwide_compensation import split_embeddings_by_domains
+
 
 def embed(datapath, model):
     """
@@ -181,6 +185,22 @@ def interpret_chromatin(datapath, model):
     seq_scores_at_states(model, datapath, input_data, out_path, order)
 
 
+def TFwide_embeddings(datapath, model):
+    # Load the bound data.
+    # Assumption: The bound data is pre-calculated.
+    # The bound data is extracted in main.
+    input_data = load_bound_data(datapath)
+    # Extract and save the embeddings of bound and unbound sets to file.
+    activations = get_activations_low_mem(model, input_data)
+    domains = np.loadtxt(datapath + ".domains")
+
+    # Extract domain calls at bound sites.
+    labels = np.loadtxt(datapath + ".labels")
+    domains_at_bound = domains[labels == 1]
+    outpath = datapath + ".figure3/"
+    split_embeddings_by_domains(activations, domains_at_bound, outpath)
+
+
 def main():
     # TO DO:
     # SET UP AN EXAMPLE RUN SCRIPT/README
@@ -203,6 +223,8 @@ def main():
     # print 'Loading and extracting the subset of bound sites...'
     # get_bound_data(args.datapath)
     # print 'Done loading...'
+
+    TFwide_embeddings(args.datapath, model)
 
     if args.joint:
         # Load the bound data and extract the joint embeddings
