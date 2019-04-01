@@ -51,20 +51,20 @@ class IntegratedGradients(GradientSaliency):
         return total_gradients * input_diff
 
 
-def random_baseline_attribution(gs, boundX, boundC):
+def random_baseline_attribution(gs, boundX, boundC, no_of_chroms):
     system_attribution = []
     for idx in range(boundX.shape[0]):
         print idx
         baseline = np.zeros_like(boundX) + 0.25
-        grads = gs.GetMask(boundX[idx], boundC[idx].reshape(-1, 130),
+        grads = gs.GetMask(boundX[idx], boundC[idx].reshape(-1, (no_of_chroms * 10)),
                            input_baseline=baseline[0])  # the baseline[0] cause we go one seq at a time.
         attribution = np.sum(grads, axis=1)  # this should be a (500,) vector.
         system_attribution.append(attribution)
     return np.array(system_attribution)
 
 
-def get_sequence_attribution(datapath, model, input_data):
+def get_sequence_attribution(datapath, model, input_data, no_of_chrom_datatracks):
     boundX, boundC = input_data
     grad_sal = IntegratedGradients(model)
-    rb = random_baseline_attribution(grad_sal, boundX, boundC)
+    rb = random_baseline_attribution(grad_sal, boundX, boundC, no_of_chrom_datatracks)
     return rb
