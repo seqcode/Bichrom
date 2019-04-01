@@ -56,7 +56,8 @@ def random_baseline_attribution(gs, boundX, boundC, no_of_chroms):
     for idx in range(boundX.shape[0]):
         print idx
         baseline = np.zeros_like(boundX) + 0.25
-        grads = gs.GetMask(boundX[idx], boundC[idx].reshape(-1, (no_of_chroms * 10)),
+        print no_of_chroms
+        grads = gs.GetMask(boundX[idx], boundC[idx].reshape(-1, (int(no_of_chroms) * 10)),
                            input_baseline=baseline[0])  # the baseline[0] cause we go one seq at a time.
         attribution = np.sum(grads, axis=1)  # this should be a (500,) vector.
         system_attribution.append(attribution)
