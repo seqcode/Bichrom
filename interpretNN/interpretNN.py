@@ -87,7 +87,7 @@ def draw_embedding_figures(datapath):
     plot_1d_chrom(out_path, embedding, embedding_negative)
 
 
-def interpret_sequence(datapath, model):
+def interpret_sequence(datapath, model, no_of_cdata):
     """
     Params:
 
@@ -111,8 +111,8 @@ def interpret_sequence(datapath, model):
     out_path = datapath + '.figure4/'
     call(['mkdir', out_path])
     # Pass this sub_folder as the target destination for all plots/files generated here
-    # rb_attribution = get_sequence_attribution(datapath, model, input_data)
-    # np.save(out_path + "sequence_attribution", rb_attribution)
+    rb_attribution = get_sequence_attribution(datapath, model, input_data, no_of_cdata)
+    np.save(out_path + "sequence_attribution", rb_attribution)
     # rb_attribution = np.load(out_path + "sequence_attribution.npy")
     embedding = get_embeddings_low_mem(model, input_data)
 
@@ -210,6 +210,7 @@ def main():
     # adding parser arguments
     parser.add_argument("model", help="Input a trained model in '.hdf5' format")
     parser.add_argument("datapath", help="File path and prefix to the data files")
+    parser.add_argument("numc", help="The number of input chromatin data tracks used for training")
     # no optional arguments added yet.
     parser.add_argument("--sequence", action='store_true', help="Interpret the sequence sub-network (Figures 4)")
     parser.add_argument("--chromatin", action='store_true', help="Interpret the chromatin sub-network (Figures 5")
@@ -224,7 +225,7 @@ def main():
     # get_bound_data(args.datapath)
     # print 'Done loading...'
 
-    TFwide_embeddings(args.datapath, model)
+    # TFwide_embeddings(args.datapath, model)
 
     if args.joint:
         # Load the bound data and extract the joint embeddings
@@ -238,7 +239,7 @@ def main():
     if args.sequence:
         # sequence_attribution(args.datapath, model)
         print 'Calculating attribution and interpreting the sequence model...'
-        interpret_sequence(args.datapath, model)
+        interpret_sequence(args.datapath, model, args.numc)
 
     if args.chromatin:
         print 'Interpreting the chromatin model...'
