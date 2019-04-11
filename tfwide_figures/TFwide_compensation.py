@@ -44,20 +44,29 @@ def get_activations_low_mem(model, input_data):
     activations_rs = np.vstack(batch_list)
     w, b = model.layers[-1].get_weights()
     w = np.reshape(w, (2,))
-    return activations_rs # Not returning the embeddings here.
+    abs_w = w/abs(w)
+    print abs_w[0]
+    return w * activations_rs  # Not returning the embeddings here.
 
 
-def split_embeddings_by_domains(embeddings, domains, outpath):
+def split_embeddings_by_domains(embeddings, domains, protein):
     # domains is a column vector with each row either 1/0 based on ATAC-seq.
     seq_embeddings = embeddings[:, 0]
     embeddings_at_acc = seq_embeddings[domains == 1]
     embeddings_at_inacc = seq_embeddings[domains == 0]
-    dat_a = pd.DataFrame(embeddings_at_acc, np.asarray('A').repeat(len(embeddings_at_acc)))
-    dat_ia = pd.DataFrame(embeddings_at_inacc, np.asarray('IA').repeat(len(embeddings_at_inacc)))
+
+    # This treats the A/IA as an index
+    dat_a = pd.DataFrame(embeddings_at_acc, columns=['score'])
+    dat_a['chromatin'] = pd.DataFrame(np.asarray('A').repeat(len(embeddings_at_acc)))
+    dat_ia = pd.DataFrame(embeddings_at_inacc, columns=['score'])
+    dat_ia['chromatin'] = pd.DataFrame(np.asarray('IA').repeat(len(embeddings_at_inacc)))
     dat = pd.concat([dat_a, dat_ia])
+    dat['protein'] = protein
+    return dat
+    # print dat
     # Plotting
-    sns.boxplot(x=dat.index.values, y=dat[0])
-    plt.savefig(outpath + 'split_sequenceScores.pdf')
+    # sns.boxplot(x=dat.index.values, y=dat[0])
+    # plt.savefig(outpath + 'split_sequenceScores.pdf')
 
 
 
