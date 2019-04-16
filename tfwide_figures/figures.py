@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from score_motifs import motif_scores
 
 
 def TFwide_embeddings(datapath, modelpath):
@@ -94,7 +95,8 @@ def main():
     # get_bound_data(args.datapath + 'Ngn2.chr10')
 
     # print 'Done loading...'
-    TFwide_embeddings(args.datapath, args.modelpath)
+    # TFwide_embeddings(args.datapath, args.modelpath)
+    motif_scores(args.modelpath)
 
 
 if __name__ == "__main__":
