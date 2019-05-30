@@ -4,34 +4,44 @@ import seaborn as sns
 
 
 def metrics_boxplots(datapath):
-    sns.set_style('ticks', {'axes.edgecolor': 'black'})
-    print sns.axes_style()
-    fig, ax = plt.subplots()
-    fig.subplots_adjust(left=.20, bottom=.10, right=.99, top=.90)
-    # sns.set_style('ticks')
-    dat = np.loadtxt(datapath + '.txt', delimiter=", ", dtype=str)
+    """
+    Saves the chrom-only, sequence-only, sequence + control, sequence + chromatin boxplots to datapath.results.txt
+    Parameters:
+        datapath (str): Path the to ".txt" comma-separated run summary files (without the .txt suffix)
+    Returns:
+        None
+    """
+    # Loading the data:
+    dat = np.loadtxt(datapath + '.txt', delimiter=',', dtype=str)
+    # Extract the data that to be plotted:
     # Plot 1: Using only the following four runs here: (not the ATAC)
-    c0 = (dat[:, 0] == 'ES_chrom')
-    c1 = (dat[:, 0] == 'ES_seq')
-    c2 = (dat[:, 0] == 'ES')
-    c3 = (dat[:, 0] == 'input')
-    # Let's use these conditions to subset are data
-    conditions = np.transpose(np.vstack((c0, c1, c2, c3)))
+    chrom_only = (dat[:, 0] == 'ES_chrom')
+    sequence_only = (dat[:, 0] == 'ES_seq')
+    sequence_and_chromatin = (dat[:, 0] == 'ES')
+    sequence_and_control = (dat[:, 0] == 'input')
+
+    conditions = np.transpose(np.vstack((chrom_only, sequence_only, sequence_and_control, sequence_and_chromatin)))
     dat = dat[np.any(conditions, axis=1)]
+
+    sns.set_style('ticks', {'axes.edgecolor': 'black'})
+    fig, ax = plt.subplots()
+    # Define the color palette:
+    my_palette = {'ES_chrom': 'indianred', 'ES_seq': '#F1C40F', 'ES': '#1F618D', 'input': 'grey'}
+    # Plotting
+    sns.boxplot(dat[:, 0], dat[:, 1].astype(float), palette=my_palette)
+    # Defining the plot attributes
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    plt.ylim(0, 1)
+    plt.ylabel("", fontsize=12)
+    # Defining the plot size & thickness etc.
+    for axis in ['top', 'bottom', 'left', 'right']:
+        ax.spines[axis].set_linewidth(1)
+    # Setting figure size and saving figure.
+    fig.subplots_adjust(left=.20, bottom=.10, right=.95, top=.95)
+    # Plot size:
     width = 4
     height = 4.5
-    # Box plot for gain in performance:
-    sns.boxplot(dat[:, 0], dat[:, 1].astype(float), palette="Set2")
-    plt.xticks(range(4), [r'$M_c$', r'$M_s$', r'$M_s$'+r'$_i$', r'$M_s$' + r'$_c$'], fontsize=12)
-    plt.ylim(0, 1)
-    plt.yticks(fontsize=12)
-    plt.ylabel("AUC (Precision-Recall Curve)", fontsize=12)
-    plt.title('Ascl1', fontsize=14)
-    for axis in ['top', 'bottom', 'left', 'right']:
-        ax.spines[axis].set_linewidth(1.5)
-    # Setting figure size and saving figure.
     fig.set_size_inches(width, height)
     sns.despine()
     plt.savefig(datapath + '.results.pdf')
-    plt.show()
-
