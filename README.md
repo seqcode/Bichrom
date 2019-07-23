@@ -1,7 +1,7 @@
 ### iTF: Predicting induced TF binding given DNA sequence and preexisting chromatin data
 A bimodal neural network architecture to model induced in vivo TF binding based on TF's sequence preferences and the preexisting chromatin landscape.
 
-### Citation (Update with BioRxiv submission)
+### Citation
 Srivastava, Divyanshi, et al. "Characterizing the sequence and prior chromatin determinants of induced TF binding with bimodal neural networks." BioRxiv (2019): 672790.
 
 ### Requirements
