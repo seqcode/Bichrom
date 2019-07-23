@@ -2,7 +2,7 @@
 A bimodal neural network architecture to model induced in vivo TF binding based on TF's sequence preferences and the preexisting chromatin landscape.
 
 ### Citation (Update with BioRxiv submission)
-Characterizing the sequence and chromatin pre-determinants of induced TF binding with deep bimodal neural networks.
+Srivastava, Divyanshi, et al. "Characterizing the sequence and prior chromatin determinants of induced TF binding with bimodal neural networks." BioRxiv (2019): 672790.
 
 ### Requirements
 1. Python2.7
