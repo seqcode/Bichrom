@@ -98,7 +98,7 @@ def build_model(hyperparameters, seq_length):
     return model
 
 
-def train(model, filename, batchsize, seqlen, steps_per_epoch):
+def train(model, filename, modelpath, batchsize, seqlen, steps_per_epoch):
     """ 
     Train the NN using Adam 
     inputs: NN architecture
@@ -111,7 +111,6 @@ def train(model, filename, batchsize, seqlen, steps_per_epoch):
     validation_data = mgVal.next()
     PR_history = PR_metrics()
     # Adding check-pointing
-    filepath=sys.argv[2]
     checkpointer = ModelCheckpoint(filepath + '.{epoch:02d}.hdf5', verbose=1, save_best_only=False)
     # Parameters for early stopping
     earlystop = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=5)
@@ -164,6 +163,7 @@ if __name__ == "__main__":
     metrics = args.outfile
     for val in params:
         metrics = metrics + '.' + str(val)
+    modelpath = metrics + '.model'
 
     # Defining the steps per epoch
     steps = args.data_size / batchsize
@@ -172,6 +172,6 @@ if __name__ == "__main__":
     model = build_model(params, seq_length=seqlen)
 
     # Training the model    
-    trained_model, L = train(model, filename, batchsize, seqlen, steps)
+    trained_model, L = train(model, filename, modelpath, batchsize, seqlen, steps)
     # Saving the training loss and auPRC.
     save_network_outputs(L, metrics)
