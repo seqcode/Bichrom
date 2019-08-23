@@ -23,7 +23,7 @@ except Exception as e:
 
 class Params():
     def __init__(self):
-        self.batchsize = [1024, 4096]
+        self.batchsize = [500]  # [1024, 4096]
         self.dense_layers = range(1, 10)
         self.filters = [16, 32, 64, 128, 256]
         self.filter_size = [6, 15, 24, 32]
@@ -98,7 +98,7 @@ def build_model(hyperparameters, seq_length):
     return model
 
 
-def train(model, filename, batchsize, seqlen):
+def train(model, filename, batchsize, seqlen, steps_per_epoch):
     """ 
     Train the NN using Adam 
     inputs: NN architecture
@@ -116,7 +116,7 @@ def train(model, filename, batchsize, seqlen):
     # Parameters for early stopping
     earlystop = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=5)
     # Training the model..
-    hist = model.fit_generator(epochs=10, batchsize=batchsize, generator=mg,
+    hist = model.fit_generator(epochs=10, steps_per_epoch=steps_per_epoch, generator=mg,
                                validation_data=validation_data, callbacks=[PR_history, checkpointer, earlystop])
     # consolidating the training metrics! (should probably be another function!)
     loss = hist.history['loss']
@@ -144,12 +144,12 @@ if __name__ == "__main__":
  
     # adding optional parser arguments
     parser.add_argument("--seqlen", help="input sequence length", default=500)
+    parser.add_argument("--data_size", help="input training data size", default=1000)
 
     args = parser.parse_args()
      
     filename = args.datapath
     filename_val = args.val_datapath
-    metrics = args.outfile
 
     # Optional Arguments
     if args.seqlen:
@@ -161,11 +161,17 @@ if __name__ == "__main__":
     # Choosing the parameters from a hyper-parameter search space:
     params = choose_params()
     batchsize = params[0]  # The batch-size needs to be passed to the the train module.
+    metrics = args.outfile
+    for val in params:
+        metrics = metrics + '.' + str(val)
+
+    # Defining the steps per epoch
+    steps = args.data_size / batchsize
 
     # Defining the network architecture
     model = build_model(params, seq_length=seqlen)
 
     # Training the model    
-    trained_model, L = train(model, filename, batchsize, seqlen)
+    trained_model, L = train(model, filename, batchsize, seqlen, steps)
     # Saving the training loss and auPRC.
     save_network_outputs(L, metrics)
