@@ -3,10 +3,10 @@ import numpy as np
 from subprocess import call
 # local modules
 
-from utils import get_bound_data
 from utils import load_bound_data
 from utils import get_random_sample_shuffled
 from keras.models import load_model
+from utils import get_bound_data
 
 # joint embeddings
 from joint_embeddings import get_embeddings, get_embeddings_low_mem
@@ -15,7 +15,6 @@ from joint_embeddings import plot_split_embeddings
 from joint_embeddings import plot_1d_seq, plot_1d_chrom
 
 # sequence
-from sequence_attribution import get_sequence_attribution
 from sequence_interpretation import plot_multiplicity, plot_kmer_scores, plot_correlation, plot_dots
 from sequence_interpretation import motifs_in_ns, second_order_motifs
 
@@ -25,10 +24,13 @@ from chromatin_interpretation import scores_at_states, seq_scores_at_states
 
 # metrics
 from relative_gain import metrics_boxplots
+from relative_gain import relative_prcs, relative_rocs
+# from relative_gain_alltfs import metrics_boxplots
 
 # TF wide analysis
-from TFwide_compensation import get_activations_low_mem
-from TFwide_compensation import split_embeddings_by_domains
+# from tfwide_figures.TFwide_compensation import get_activations_low_mem
+# from tfwide_figures.TFwide_compensation import split_embeddings_by_domains
+# from vizualize import visualize
 
 
 def embed(datapath, model):
@@ -56,9 +58,9 @@ def embed(datapath, model):
     # Saving the embeddings to outfile
     np.savetxt(datapath + ".embedding.txt", embedding)
     # Extract and save the embeddings of a random negative set
-    unbound_input = get_random_sample_shuffled(datapath + '.shuffled')
-    embedding_negative = get_embeddings_low_mem(model, unbound_input)
-    np.savetxt(datapath + '.negative.embedding.txt', embedding_negative)
+    # unbound_input = get_random_sample_shuffled(datapath + '.shuffled')
+    # embedding_negative = get_embeddings_low_mem(model, unbound_input)
+    # np.savetxt(datapath + '.negative.embedding.txt', embedding_negative)
 
 
 def draw_embedding_figures(datapath):
@@ -75,16 +77,16 @@ def draw_embedding_figures(datapath):
     out_path = datapath + '.figure3/'
     call(['mkdir', out_path])
     # Loading the embedding text files
-    embedding_negative = np.loadtxt(datapath + '.negative.embedding.txt')
+    # embedding_negative = np.loadtxt(datapath + '.negative.embedding.txt')
     embedding = np.loadtxt(datapath + '.embedding.txt')
     # Plot the joint embedding (bound + unbound loci)
-    plot_embeddings(out_path, embedding, embedding_negative)
+    # plot_embeddings(out_path, embedding, embedding_negative)
     # Saves figure to
     # Plot the positive embeddings colored based on the sequence-score
     plot_split_embeddings(out_path, embedding)
     # Plot the marginal 1D distributions
-    plot_1d_seq(out_path, embedding, embedding_negative)
-    plot_1d_chrom(out_path, embedding, embedding_negative)
+    # plot_1d_seq(out_path, embedding, embedding_negative)
+    # plot_1d_chrom(out_path, embedding, embedding_negative)
 
 
 def interpret_sequence(datapath, model, no_of_cdata):
@@ -111,9 +113,11 @@ def interpret_sequence(datapath, model, no_of_cdata):
     out_path = datapath + '.figure4/'
     call(['mkdir', out_path])
     # Pass this sub_folder as the target destination for all plots/files generated here
-    rb_attribution = get_sequence_attribution(datapath, model, input_data, no_of_cdata)
-    np.save(out_path + "sequence_attribution", rb_attribution)
-    # rb_attribution = np.load(out_path + "sequence_attribution.npy")
+    # rb_attribution = get_sequence_attribution(datapath, model, input_data, no_of_cdata)
+    # np.save(out_path + "sequence_attribution", rb_attribution)
+    rb_attribution = np.load(out_path + "sequence_attribution.npy")
+    # visualize(datapath, out_path, input_data, rb_attribution)
+
     embedding = get_embeddings_low_mem(model, input_data)
 
     # Plot the observed 6-mer frequencies of CAGSTG kmers in Ascl1 sequences.
@@ -185,22 +189,6 @@ def interpret_chromatin(datapath, model):
     seq_scores_at_states(model, datapath, input_data, out_path, order)
 
 
-def TFwide_embeddings(datapath, model):
-    # Load the bound data.
-    # Assumption: The bound data is pre-calculated.
-    # The bound data is extracted in main.
-    input_data = load_bound_data(datapath)
-    # Extract and save the embeddings of bound and unbound sets to file.
-    activations = get_activations_low_mem(model, input_data)
-    domains = np.loadtxt(datapath + ".domains")
-
-    # Extract domain calls at bound sites.
-    labels = np.loadtxt(datapath + ".labels")
-    domains_at_bound = domains[labels == 1]
-    outpath = datapath + ".figure3/"
-    split_embeddings_by_domains(activations, domains_at_bound, outpath)
-
-
 def main():
     # TO DO:
     # SET UP AN EXAMPLE RUN SCRIPT/README
@@ -221,11 +209,9 @@ def main():
     # Load the model, as well as extract the bound data for the joint embeddings
     model = load_model(args.model)
 
-    # print 'Loading and extracting the subset of bound sites...'
-    # get_bound_data(args.datapath)
-    # print 'Done loading...'
-
-    # TFwide_embeddings(args.datapath, model)
+    print 'Loading and extracting the subset of bound sites...'
+    get_bound_data(args.datapath)
+    print 'Done loading...'
 
     if args.joint:
         # Load the bound data and extract the joint embeddings
@@ -248,6 +234,7 @@ def main():
     if args.metrics:
         print 'Plotting the relative gains in performance...'
         metrics_boxplots(args.datapath)
+        # relative_rocs(args.datapath)
 
 
 if __name__ == "__main__":
