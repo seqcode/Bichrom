@@ -31,7 +31,7 @@ class GradientSaliency(object):
 class IntegratedGradients(GradientSaliency):
     """ Implement the integrated gradients method"""
 
-    def GetMask(self, input_sequence, chrom_value, input_baseline=None, nsamples=10):
+    def GetMask(self, input_sequence, chrom_value, input_baseline=None, nsamples=2): # change this back
         """Returns an integrated gradients mask"""
         if input_baseline is None:
             input_baseline = np.zeros_like(input_sequence)
@@ -55,7 +55,8 @@ def random_baseline_attribution(gs, boundX, boundC, no_of_chroms):
     system_attribution = []
     for idx in range(boundX.shape[0]):
         print idx
-        baseline = np.zeros_like(boundX) + 0.25
+        # baseline = np.zeros_like(boundX) + 0.25
+        baseline = np.zeros_like(boundX)
         print no_of_chroms
         grads = gs.GetMask(boundX[idx], boundC[idx].reshape(-1, (int(no_of_chroms) * 10)),
                            input_baseline=baseline[0])  # the baseline[0] cause we go one seq at a time.
@@ -66,6 +67,20 @@ def random_baseline_attribution(gs, boundX, boundC, no_of_chroms):
 
 def get_sequence_attribution(datapath, model, input_data, no_of_chrom_datatracks):
     boundX, boundC = input_data
-    grad_sal = IntegratedGradients(model)
-    rb = random_baseline_attribution(grad_sal, boundX, boundC, no_of_chrom_datatracks)
-    return rb
+    # Switching to saliency for now.
+    # grad_sal = IntegratedGradients(model)
+    # rb = random_baseline_attribution(grad_sal, boundX, boundC, no_of_chrom_datatracks)
+    # return rb
+    grad_array = []
+    grad_star_inp_arr = []
+
+    grad_sal = GradientSaliency(model)
+    print boundX.shape
+    for idx in range(boundX.shape[0]):
+        gradients = grad_sal.get_mask(boundX[idx], boundC[idx].reshape(-1, (int(no_of_chrom_datatracks) * 10)))
+        grad_star_inp = gradients * boundX[idx]
+
+        grad_array.append(gradients)
+        grad_star_inp_arr.append(grad_star_inp)
+    print len(grad_array)
+    return grad_array, grad_star_inp_arr

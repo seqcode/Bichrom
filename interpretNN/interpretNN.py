@@ -4,27 +4,27 @@ from subprocess import call
 # local modules
 
 from utils import load_bound_data
-from utils import get_random_sample_shuffled
 from keras.models import load_model
 from utils import get_bound_data
 
 # joint embeddings
 from joint_embeddings import get_embeddings, get_embeddings_low_mem
-from joint_embeddings import plot_embeddings
 from joint_embeddings import plot_split_embeddings
-from joint_embeddings import plot_1d_seq, plot_1d_chrom
 
 # sequence
 from sequence_interpretation import plot_multiplicity, plot_kmer_scores, plot_correlation, plot_dots
 from sequence_interpretation import motifs_in_ns, second_order_motifs
-
+from sequence_attribution import get_sequence_attribution
 # chromatin
 from chromatin_interpretation import scores_at_domains
 from chromatin_interpretation import scores_at_states, seq_scores_at_states
 
+
+# MOVE THIS AWAY FROM HERE. METRICS IS CURRENTLY IN A DIFFERENT FOLDER.
 # metrics
-from relative_gain import metrics_boxplots
-from relative_gain import relative_prcs, relative_rocs
+# from metrics.relative_gain import metrics_boxplots
+
+
 # from relative_gain_alltfs import metrics_boxplots
 
 # TF wide analysis
@@ -113,9 +113,12 @@ def interpret_sequence(datapath, model, no_of_cdata):
     out_path = datapath + '.figure4/'
     call(['mkdir', out_path])
     # Pass this sub_folder as the target destination for all plots/files generated here
-    # rb_attribution = get_sequence_attribution(datapath, model, input_data, no_of_cdata)
-    # np.save(out_path + "sequence_attribution", rb_attribution)
-    rb_attribution = np.load(out_path + "sequence_attribution.npy")
+    # This function is currently modified to return grads and grads_star_input
+
+    grad, grad_star_inp = get_sequence_attribution(datapath, model, input_data, no_of_cdata)
+    np.save(out_path + "gradients", grad)
+    np.save(out_path + "gradients_star_inp", grad_star_inp)
+    # rb_attribution = np.load(out_path + "sequence_attribution.npy")
     # visualize(datapath, out_path, input_data, rb_attribution)
 
     embedding = get_embeddings_low_mem(model, input_data)
@@ -209,9 +212,9 @@ def main():
     # Load the model, as well as extract the bound data for the joint embeddings
     model = load_model(args.model)
 
-    print 'Loading and extracting the subset of bound sites...'
-    get_bound_data(args.datapath)
-    print 'Done loading...'
+    # print 'Loading and extracting the subset of bound sites...'
+    # get_bound_data(args.datapath)
+    # print 'Done loading...'
 
     if args.joint:
         # Load the bound data and extract the joint embeddings
