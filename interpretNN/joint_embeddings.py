@@ -180,7 +180,7 @@ def plot_split_embeddings(out_path, embedding):
     fig, ax = plt.subplots()
     fig.subplots_adjust(left=.15, bottom=.15, right=.95, top=.95)
     plt.scatter(x=seq_score[seq_score > 4], y=chromatin_score[seq_score > 4], s=8, c='#D68910')
-    plt.scatter(x=seq_score[seq_score < 4], y=chromatin_score[seq_score < 4], s=8, c='#2471A3')
+    plt.scatter(x=seq_score[seq_score < 4], y=chromatin_score[seq_score < 4], s=8, c='#D68910')
     for axis in ['top', 'bottom', 'left', 'right']:
         ax.spines[axis].set_linewidth(1.5)
     plt.xticks(fontsize=10)
