@@ -172,15 +172,23 @@ def plot_split_embeddings(out_path, embedding):
     """
     seq_score = embedding[:, 0]
     chromatin_score = embedding[:, 1]
-    # Determine the color threshold automatically
-    print np.sum(seq_score > 4)/len(seq_score)
 
+    # Determine the color threshold automatically
+    # print np.sum(seq_score > 4)/len(seq_score)
+    q1 = np.quantile(seq_score, 0.25)
+    q4 = np.quantile(seq_score, 0.75)
+    print q1, q4
     # Figure 1
     sns.set_style('ticks')
     fig, ax = plt.subplots()
     fig.subplots_adjust(left=.15, bottom=.15, right=.95, top=.95)
-    plt.scatter(x=seq_score[seq_score > 4], y=chromatin_score[seq_score > 4], s=8, c='#D68910')
-    plt.scatter(x=seq_score[seq_score < 4], y=chromatin_score[seq_score < 4], s=8, c='#2471A3')
+    # Top quartile
+    plt.scatter(x=seq_score[seq_score >= q4], y=chromatin_score[seq_score >= q4], s=4, c='#1F618D', alpha=0.5)
+    # Middle data
+    plt.scatter(x=seq_score[(seq_score >= q1) & (seq_score < q4)],
+                y=chromatin_score[(seq_score >= q1) & (seq_score < q4)], s=4, c='#AEB6BF', alpha=0.5)
+    # Bottom quartile
+    plt.scatter(x=seq_score[seq_score < q1], y=chromatin_score[seq_score < q1], s=4, c='#85C1E9', alpha=0.5)
     for axis in ['top', 'bottom', 'left', 'right']:
         ax.spines[axis].set_linewidth(1.5)
     plt.xticks(fontsize=10)
