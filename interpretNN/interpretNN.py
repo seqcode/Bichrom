@@ -1,15 +1,20 @@
 import argparse
 import numpy as np
 from subprocess import call
-# local modules
 
+# Import from utils
 from utils import load_bound_data
-from keras.models import load_model
 from utils import get_bound_data
+from utils import get_random_sample_shuffled
+
+# Importing from Keras
+from keras.models import load_model
 
 # joint embeddings
 from joint_embeddings import get_embeddings, get_embeddings_low_mem
-from joint_embeddings import plot_split_embeddings
+from joint_embeddings import plot_1d_chrom, plot_1d_seq
+from joint_embeddings import plot_embeddings
+from joint_embeddings import plot_embeddings_bound_only
 
 # sequence
 from sequence_interpretation import plot_multiplicity, plot_kmer_scores, plot_correlation, plot_dots
@@ -33,7 +38,7 @@ from chromatin_interpretation import scores_at_states, seq_scores_at_states
 # from vizualize import visualize
 
 
-def embed(datapath, model):
+def embed(datapath, model, input_data):
     """
     Loads the bound data & extracts the joint embeddings
     This function takes as input path to the input data, as well as a loaded model.
@@ -42,25 +47,37 @@ def embed(datapath, model):
     Parameters:
     datapath: path to the bound files.
     model: trained model
+    input_data (tuple): Contains X (seq) and C (chromatin) tensors
 
     Returns: None
-    Saves both the postive and negative embedding matrices (2*n) to the defined outfile.
+    Saves both the postive and negative embedding matrices to the defined outfile.
     """
-    # Load the bound data.
-    # Assumption: The bound data is pre-calculated.
-    # The bound data is extracted in main.
-    input_data = load_bound_data(datapath)
+
+    # TO ADDRESS: LOAD INPUT DATA IN MAIN
+    # input_data = load_bound_data(datapath)
+
     # Extract and save the embeddings of bound and unbound sets to file.
     embedding = get_embeddings(model, input_data)
+    # Extract and save the embeddings of a random negative set
+    unbound_input = get_random_sample_shuffled(datapath + '.shuffled')
+    embedding_negative = get_embeddings_low_mem(model, unbound_input)
+
     # Creating the outfile
     out_path = datapath + '.figure3/'
     call(['mkdir', out_path])
     # Saving the embeddings to outfile
     np.savetxt(datapath + ".embedding.txt", embedding)
-    # Extract and save the embeddings of a random negative set
-    # unbound_input = get_random_sample_shuffled(datapath + '.shuffled')
-    # embedding_negative = get_embeddings_low_mem(model, unbound_input)
-    # np.savetxt(datapath + '.negative.embedding.txt', embedding_negative)
+    np.savetxt(datapath + '.negative.embedding.txt', embedding_negative)
+
+    # Plot 2-D embeddings: Bound + Unbound Sites
+    plot_embeddings(out_path, embedding, embedding_negative)
+    # Plot 2-D embeddings: Bound only
+    plot_embeddings_bound_only(out_path, embedding, embedding_negative)
+
+    # Plot marginal 1D distributions:
+    plot_1d_seq(out_path, embedding, embedding_negative)
+    plot_1d_chrom(out_path, embedding, embedding_negative)
+
 
 
 def draw_embedding_figures(datapath):
