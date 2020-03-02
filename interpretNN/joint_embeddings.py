@@ -15,9 +15,11 @@ def extraction_function(model):
     Returns:
         Keras function that returns network embeddings
     """
+    for idx, layer in enumerate(model.layers):
+        print idx, layer
     seq_input = model.layers[0].input    # need to use layer names here
     # chrom_input = model.layers[3].input  # need to use layer names here. # why was this 5 some other time?
-    chrom_input = model.layers[4].input
+    chrom_input = model.layers[6].input # Model Dependentt!!!!
     network_embedding = model.layers[-1].input
     return K.function([seq_input, chrom_input, K.learning_phase()], [network_embedding])
 
@@ -157,6 +159,32 @@ def plot_embeddings(out_path, embedding, neg_embedding):
     plt.ylabel('Chromatin sub-network activations', fontsize=14)
     fig.set_size_inches(6, 6)
     plt.savefig(out_path + "Joint_embedding.pdf")
+
+
+def plot_embeddings_bound_only(out_path, embedding, neg_embedding):
+    """
+    Plot the joint sequence and chromatin embeddings for bound vs. unbound loci.
+    Parameters:
+        out_path: Directory to store the output figures
+        embedding: Embeddings for the positive or bound set
+        neg_embedding: Embeddings for a randomly sampled unbound set
+    Returns:
+        None
+    """
+    sns.set_style('ticks')
+    fig, ax = plt.subplots()
+    fig.subplots_adjust(left=.15, bottom=.15, right=.95, top=.95)
+    plt.scatter(x=embedding[:, 0], y=embedding[:, 1], s=8, c='#D68910')
+
+    # Set figure styles and size
+    for axis in ['top', 'bottom', 'left', 'right']:
+        ax.spines[axis].set_linewidth(1.5)
+    plt.xticks(fontsize=10)
+    plt.yticks(fontsize=10)
+    plt.xlabel('Sequence sub-network activations', fontsize=14)
+    plt.ylabel('Chromatin sub-network activations', fontsize=14)
+    fig.set_size_inches(6, 6)
+    plt.savefig(out_path + "Joint_embedding_bound_only.pdf")
 
 
 def plot_split_embeddings(out_path, embedding):
