@@ -179,7 +179,6 @@ def main():
     parser.add_argument("--sequence", action='store_true', help="Interpret the sequence sub-network (Figures 4)")
     parser.add_argument("--chromatin", action='store_true', help="Interpret the chromatin sub-network (Figures 5")
     parser.add_argument("--joint", action='store_true', help="Plot the sequence-chromatin contributions (Figures 3)")
-    parser.add_argument("--metrics", action='store_true', help="Plot the global metrics (Figures 2)")
     args = parser.parse_args()
 
     # Load the model, as well as extract the bound data for the joint embeddings
