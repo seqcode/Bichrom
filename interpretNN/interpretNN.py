@@ -25,19 +25,6 @@ from chromatin_interpretation import scores_at_domains
 from chromatin_interpretation import scores_at_states, seq_scores_at_states
 
 
-# MOVE THIS AWAY FROM HERE. METRICS IS CURRENTLY IN A DIFFERENT FOLDER.
-# metrics
-# from metrics.relative_gain import metrics_boxplots
-
-
-# from relative_gain_alltfs import metrics_boxplots
-
-# TF wide analysis
-# from tfwide_figures.TFwide_compensation import get_activations_low_mem
-# from tfwide_figures.TFwide_compensation import split_embeddings_by_domains
-# from vizualize import visualize
-
-
 def embed(datapath, model, input_data):
     """
     Loads the bound data & extracts the joint embeddings
@@ -52,10 +39,6 @@ def embed(datapath, model, input_data):
     Returns: None
     Saves both the postive and negative embedding matrices to the defined outfile.
     """
-
-    # TO ADDRESS: LOAD INPUT DATA IN MAIN
-    # input_data = load_bound_data(datapath)
-
     # Extract and save the embeddings of bound and unbound sets to file.
     embedding = get_embeddings(model, input_data)
     # Extract and save the embeddings of a random negative set
@@ -69,41 +52,14 @@ def embed(datapath, model, input_data):
     np.savetxt(datapath + ".embedding.txt", embedding)
     np.savetxt(datapath + '.negative.embedding.txt', embedding_negative)
 
+    # Plotting
     # Plot 2-D embeddings: Bound + Unbound Sites
     plot_embeddings(out_path, embedding, embedding_negative)
     # Plot 2-D embeddings: Bound only
     plot_embeddings_bound_only(out_path, embedding, embedding_negative)
-
     # Plot marginal 1D distributions:
     plot_1d_seq(out_path, embedding, embedding_negative)
     plot_1d_chrom(out_path, embedding, embedding_negative)
-
-
-
-def draw_embedding_figures(datapath):
-    """
-    Load the embeddings that were previously extracted and plots all figures for manuscript section2.
-
-    Parameters:
-    datapath: path to the bound data
-
-    Returns: None
-    Saves all figures to the defined output folder.
-    """
-    # Defining the out path
-    out_path = datapath + '.figure3/'
-    call(['mkdir', out_path])
-    # Loading the embedding text files
-    # embedding_negative = np.loadtxt(datapath + '.negative.embedding.txt')
-    embedding = np.loadtxt(datapath + '.embedding.txt')
-    # Plot the joint embedding (bound + unbound loci)
-    # plot_embeddings(out_path, embedding, embedding_negative)
-    # Saves figure to
-    # Plot the positive embeddings colored based on the sequence-score
-    plot_split_embeddings(out_path, embedding)
-    # Plot the marginal 1D distributions
-    # plot_1d_seq(out_path, embedding, embedding_negative)
-    # plot_1d_chrom(out_path, embedding, embedding_negative)
 
 
 def interpret_sequence(datapath, model, no_of_cdata):
@@ -229,19 +185,19 @@ def main():
     # Load the model, as well as extract the bound data for the joint embeddings
     model = load_model(args.model)
 
-    # print 'Loading and extracting the subset of bound sites...'
-    # get_bound_data(args.datapath)
-    # print 'Done loading...'
+    print 'Loading and extracting the subset of bound sites...'
+    get_bound_data(args.datapath)
+    print 'Done loading...'
+    input_data = load_bound_data(args.datapath)
 
     if args.joint:
         # Load the bound data and extract the joint embeddings
-        # embed: gets the embedding matrix for both bound and unbound genomic loci
+        # Extract 2-D embedding for both bound data & shuffled (pre-made) unbound data
+        # Need to alter this such the unbound data is done within this program.
         print 'Extracting the joint embeddings..'
-        embed(args.datapath, model)
-        # draw_embedding_figures draws both the joint embedding as well as colored embeddings
-        print 'Plotting the joint embeddings...'
-        draw_embedding_figures(args.datapath)
+        embed(args.datapath, model, input_data)
 
+    # Making no changes here, this stays as is for now:
     if args.sequence:
         # sequence_attribution(args.datapath, model)
         print 'Calculating attribution and interpreting the sequence model...'
@@ -250,11 +206,6 @@ def main():
     if args.chromatin:
         print 'Interpreting the chromatin model...'
         interpret_chromatin(args.datapath, model)
-
-    if args.metrics:
-        print 'Plotting the relative gains in performance...'
-        metrics_boxplots(args.datapath)
-        # relative_rocs(args.datapath)
 
 
 if __name__ == "__main__":
