@@ -10,7 +10,7 @@ import numpy as np
 import sklearn.metrics
 from sklearn.metrics import precision_recall_curve
 import matplotlib.pyplot as plt
-import seaborn as sns
+from helper import plot_distributions
 
 # user defined module
 import iterutils as iu
@@ -109,7 +109,7 @@ def plot_pr_curve(test_labels, test_probas, color):
 def combine_pr_curves(records_file, m_seq_probas, m_sc_probas, labels):
     plot_pr_curve(labels, m_seq_probas, color='#F1C40F')
     plot_pr_curve(labels, m_sc_probas, color='#2471A3')
-    plt.savefig(records_file + '.pdf')
+    plt.savefig(records_file + '.pr_curves.pdf')
 
 
 def main():
@@ -126,41 +126,25 @@ def main():
     model_sc = sys.argv[5]
     # Output File
     records_files = sys.argv[6]
-    # Get the probas:
+
+    # Get the probabilities for both M-SEQ and M-SC models:
+    # Note: Labels are the same for M-SC and M-SEQ
     true_labels, probas_seq = get_probabilities(filename=filename, seq_len=sequence_len,
                                                 model_file=model_seq, outfile=probas_out_seq)
-    # Note: Labels are the same for M-SC and M-SEQ
+
     _, probas_sc = get_probabilities(filename=filename, seq_len=sequence_len,
                                      model_file=model_sc, outfile=probas_out_sc)
-    # Get the auROC and the auPRC
+
+    # Get the auROC and the auPRC for both M-SEQ and M-SC models:
     get_metrics(true_labels, probas_seq, records_files)
     get_metrics(true_labels, probas_sc, records_files)
 
-    # Plot the P-R curves:
+    # Plot the P-R curves
     combine_pr_curves(records_files, probas_seq, probas_sc, true_labels)
 
-    # Plot the posterior distributions of the recall
+    # Plot the posterior distributions of the recall:
+    plot_distributions(records_files, probas_seq, probas_sc, true_labels, fpr_thresh=0.01)
 
 
 if __name__ == "__main__":
-    outfile = sys.argv[3]
-    # loading saved model 
-    model = load_model(sys.argv[2])
-    # instantiation the generator
-    gen = merge_generators(filename, batchsize, seqlen, mode)
-    print "instantiated generator"
-    # testing on batch 
-    test_on_batch(gen, model, outfile) 
-    # Performance:
-    probas = np.loadtxt(sys.argv[3])
-
-
-    # roc_auc = sklearn.metrics.roc_auc_score(y, probas)
-    # prc = sklearn.metrics.average_precision_score(y, probas)
-    # print roc_auc, prc
-
-    # getting a rough confusion matrix/precide threshold matrix in eval scripts
-    # threshold = lambda t: 1 if t >= 0.5 else 0
-    # npthresh = np.vectorize(threshold)
-    # pred = npthresh(probas)
-    # print "Confusion Matrix:\n", sklearn.metrics.confusion_matrix(y, pred)
+    main()
