@@ -1,53 +1,148 @@
-""" Iterate over the whole genome (with no looping) to measure genome-wide performance of a trained
-neural network """
+"""
+Iterate over the whole genome (or test chromosome) to measure genome-wide performance of a trained
+neural network.
+Current Status: Testing for both M-SEQ and M-SC.
+"""
 
 from __future__ import division
 import sys
 import numpy as np
 import sklearn.metrics
-# import sklearn.model_selection as ms
+from sklearn.metrics import precision_recall_curve
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 # user defined module
 import iterutils as iu
+
 # keras imports
-from keras.models import Model
-from keras.layers import Dense, Dropout, Activation, Flatten, concatenate, Input, LSTM, Bidirectional
-from keras.layers import Conv1D, MaxPooling1D
-from keras.optimizers import SGD, Adagrad, Adam
-from keras.callbacks import EarlyStopping
-from keras.models import model_from_yaml
 from keras.models import load_model
-from keras import backend as K
 
 
-def merge_generators(filename,batchsize,seqlen, mode):
+def merge_generators(filename, batchsize, seqlen, mode):
     X = iu.train_generator(filename + ".seq", batchsize, seqlen, "seq", mode) 
     A = iu.train_generator(filename + ".chromtracks", batchsize, seqlen, "accessibility", mode)
     y = iu.train_generator(filename + ".labels", batchsize, seqlen, "labels", mode)
     while True:
-        yield [X.next(),A.next()], y.next()
+        yield [X.next(), A.next()], y.next()
 
-def test_on_batch(gen, model, outfile):
-    counter = 0 
+
+def test_on_batch(batch_generator, model, outfile):
+    """
+    Get probabilities for each test data point.
+    The reason that this is implemented in a batch is because \
+    the whole genome cannot be loaded without batching.
+
+    Single held-out chromosomes can be tested directly.
+
+    :param batch_generator: a generator that yields sequence, chromatin and label vectors.
+    :param model: A trained Keras model
+    :param outfile: The outfile used for storing probabilities.
+    :return: None (Saves an output file with the probabilities for the test set )
+    """
+
+    counter = 0
     while True:
         try:
-            print "batch", counter
-            [X_test, acc_test], y = gen.next()
-            probas = model.predict_on_batch([X_test,acc_test])
+            [X_test, acc_test], y = batch_generator.next()
+            batch_probas = model.predict_on_batch([X_test, acc_test])
             # saving to file: 
             with open(outfile, "a") as fh:
-                np.savetxt(fh,probas)
+                np.savetxt(fh, batch_probas)
             counter += 1
-        except StopIteration: # Catching a propagating exception here, be careful. 
-            print "Completed Scan"
+        except StopIteration:
             break
 
-if __name__ == "__main__":
 
-    # parse these arguments from the command line eventually. 
+def get_metrics(test_labels, test_probas, records_file):
+    """
+
+    Takes the test labels and test probabilities, and calculates/
+    plots the following:
+
+        a. P-R Curves
+        b. auPRC
+        c. auROC
+        d. Posterior Distributions of the Recall at FPR=0.01
+
+    :param test_labels: n * 1 vector with the true labels ( 0 or 1 )
+    :param test_probas: n * 1 vector with the network probabilities
+    :return: None
+    """
+    # Calculate auROC
+    roc_auc = sklearn.metrics.roc_auc_score(test_labels, test_probas)
+    # Calculate auPRC
+    prc_auc = sklearn.metrics.average_precision_score(test_labels, test_probas)
+
+    # Write auROC and auPRC to records file
+    records_file.write("AUC ROC:{0}".format(roc_auc))
+    records_file.write("AUC PRC:{0}".format(prc_auc))
+
+
+def get_probabilities(filename, seq_len, model_file, outfile):
+    """
+    Get network-assigned probabilities
+    :param filename: Input file to be loaded
+    :param seq_len: eg. 500
+    :return: probas
+    """
+    # Inputing a range of default values here, can be changed later.
+    data_generator = merge_generators(filename=filename, batchsize=5000, seqlen=seq_len,
+                                      mode='nr')  # Testing mode = non-repeating
+    # Load the keras model
+    model = load_model(model_file)
+    test_on_batch(data_generator, model, outfile)
+    probas = np.loadtxt(outfile)  # Need to change this, but not now! Change structure first.
+    true_labels = np.loadtxt(filename + '.labels')
+
+    return true_labels, probas
+
+
+def plot_pr_curve(test_labels, test_probas, color):
+    # Get the PR values:
+    precision, recall, _ = precision_recall_curve(y_true=test_labels, probas_pred=test_probas)
+    plt.plot(recall, precision, c=color, lw=2.5)
+    plt.xticks(fontsize=14)
+    plt.yticks(fontsize=14)
+
+
+def combine_pr_curves(records_file, m_seq_probas, m_sc_probas, labels):
+    plot_pr_curve(labels, m_seq_probas, color='#F1C40F')
+    plot_pr_curve(labels, m_sc_probas, color='#2471A3')
+    plt.savefig(records_file + '.pdf')
+
+
+def main():
+
+    sequence_len = 500
+
+    # Use an argparse module here.
     filename = sys.argv[1]
-    batchsize = 5000
-    seqlen = 500
-    mode = "nr"
+    # M-SEQ
+    probas_out_seq = sys.argv[2]
+    model_seq = sys.argv[3]
+    # M-SC
+    probas_out_sc = sys.argv[4]
+    model_sc = sys.argv[5]
+    # Output File
+    records_files = sys.argv[6]
+    # Get the probas:
+    true_labels, probas_seq = get_probabilities(filename=filename, seq_len=sequence_len,
+                                                model_file=model_seq, outfile=probas_out_seq)
+    # Note: Labels are the same for M-SC and M-SEQ
+    _, probas_sc = get_probabilities(filename=filename, seq_len=sequence_len,
+                                     model_file=model_sc, outfile=probas_out_sc)
+    # Get the auROC and the auPRC
+    get_metrics(true_labels, probas_seq, records_files)
+    get_metrics(true_labels, probas_sc, records_files)
+
+    # Plot the P-R curves:
+    combine_pr_curves(records_files, probas_seq, probas_sc, true_labels)
+
+    # Plot the posterior distributions of the recall
+
+
+if __name__ == "__main__":
     outfile = sys.argv[3]
     # loading saved model 
     model = load_model(sys.argv[2])
@@ -58,13 +153,14 @@ if __name__ == "__main__":
     test_on_batch(gen, model, outfile) 
     # Performance:
     probas = np.loadtxt(sys.argv[3])
-    y = np.loadtxt(filename + ".labels")
-    roc_auc = sklearn.metrics.roc_auc_score(y, probas)
-    prc = sklearn.metrics.average_precision_score(y, probas)
-    print roc_auc, prc
+
+
+    # roc_auc = sklearn.metrics.roc_auc_score(y, probas)
+    # prc = sklearn.metrics.average_precision_score(y, probas)
+    # print roc_auc, prc
 
     # getting a rough confusion matrix/precide threshold matrix in eval scripts
-    threshold = lambda t: 1 if t >= 0.5 else 0
-    npthresh = np.vectorize(threshold)
-    pred = npthresh(probas)
-    print "Confusion Matrix:\n", sklearn.metrics.confusion_matrix(y, pred)
+    # threshold = lambda t: 1 if t >= 0.5 else 0
+    # npthresh = np.vectorize(threshold)
+    # pred = npthresh(probas)
+    # print "Confusion Matrix:\n", sklearn.metrics.confusion_matrix(y, pred)
