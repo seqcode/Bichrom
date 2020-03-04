@@ -27,7 +27,7 @@ def merge_generators(filename, batchsize, seqlen, mode):
         yield [X.next(), A.next()], y.next()
 
 
-def test_on_batch(batch_generator, model, outfile):
+def test_on_batch(batch_generator, model, outfile, mode):
     """
     Get probabilities for each test data point.
     The reason that this is implemented in a batch is because \
@@ -45,7 +45,10 @@ def test_on_batch(batch_generator, model, outfile):
     while True:
         try:
             [X_test, acc_test], y = batch_generator.next()
-            batch_probas = model.predict_on_batch([X_test, acc_test])
+            if mode == 'seq_only':
+                batch_probas = model.predict_on_batch([X_test])
+            else:
+                batch_probas = model.predict_on_batch([X_test, acc_test])
             # saving to file: 
             with open(outfile, "a") as fh:
                 np.savetxt(fh, batch_probas)
@@ -79,7 +82,7 @@ def get_metrics(test_labels, test_probas, records_file):
     records_file.write("AUC PRC:{0}".format(prc_auc))
 
 
-def get_probabilities(filename, seq_len, model_file, outfile):
+def get_probabilities(filename, seq_len, model_file, outfile, mode):
     """
     Get network-assigned probabilities
     :param filename: Input file to be loaded
@@ -91,7 +94,7 @@ def get_probabilities(filename, seq_len, model_file, outfile):
                                       mode='nr')  # Testing mode = non-repeating
     # Load the keras model
     model = load_model(model_file)
-    test_on_batch(data_generator, model, outfile)
+    test_on_batch(data_generator, model, outfile, mode)
     probas = np.loadtxt(outfile)  # Need to change this, but not now! Change structure first.
     true_labels = np.loadtxt(filename + '.labels')
 
@@ -130,10 +133,10 @@ def main():
     # Get the probabilities for both M-SEQ and M-SC models:
     # Note: Labels are the same for M-SC and M-SEQ
     true_labels, probas_seq = get_probabilities(filename=filename, seq_len=sequence_len,
-                                                model_file=model_seq, outfile=probas_out_seq)
+                                                model_file=model_seq, outfile=probas_out_seq, mode='seq_only')
 
     _, probas_sc = get_probabilities(filename=filename, seq_len=sequence_len,
-                                     model_file=model_sc, outfile=probas_out_sc)
+                                     model_file=model_sc, outfile=probas_out_sc, mode='sc')
 
     # Get the auROC and the auPRC for both M-SEQ and M-SC models:
     get_metrics(true_labels, probas_seq, records_files)
