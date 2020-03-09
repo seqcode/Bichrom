@@ -11,52 +11,70 @@ The module performs the following functions in order:
 """
 
 import argparse
+import numpy as np
+from subprocess import call
+from keras.models import load_model
+
+from train_seq import build_and_train_net
 
 
-def run_seq_network():
-    pass
+class Params:
+    def __init__(self):
+        self.batchsize = 20
+        self.dense_layers = 3
+        self.n_filters = 128
+        self.filter_size = 24
+        self.pooling_size = 8
+        self.pooling_stride = 8
+        self.dropout = 0.5
+        self.dense_layer_size = 128
 
 
-def run_bimodal_network():
+def run_seq_network(train_path, val_path, records_path):
+    """
+    Train M-SEQ. (Model Definition in README)
+    Save the model loss at each epoch & return the model with the lowest validation LOSS.
+
+    :param train_path: Path to the training data
+    :param val_path: Path to the validation data
+    :param records_path: Directory & prefix for output directory
+    :return: Trained M-SEQ model.
+    """
+
+    # Make an output directory for saving the sequence models, validation metrics and logs.
+    records_path_seq = records_path + '.mseq/'
+    call(['mkdir', records_path_seq])
+    # Params: current network parameters (Implement option to choose these using a random grid search)
+    curr_params = Params()
+
+    # Training the network!
+    loss = build_and_train_net(curr_params, train_path, val_path,
+                               batch_size=curr_params.batchsize, records_path=records_path_seq)
+
+    # return the model with the lowest validation LOSS
+    model_idx = np.argmin(loss)
+    # define the model path
+    model_file = records_path_seq + 'model_epoch' + str(model_idx) + '.hdf5'
+    # load and return the selected model:
+    return load_model(model_file)
+
+
+def run_bimodal_network(base_seq_model):
     pass
 
 
 def main():
     parser = argparse.ArgumentParser(description='Train M-SEQ and M-SC')
-
-    # Adding the required parser arguments (DATA)
     parser.add_argument('train_path', help='Filepath + prefix to the training data')
     parser.add_argument('val_path', help='Filepath + prefix to the validation data')
     parser.add_argument('test_path', help='Filepath + prefix to the test data')
-    # Note: In future iterations, build this separation into python itself !
-    parser.add_argument('noOfChrom', help='number of input chromatin datasets')
-
     # I'm going to change structure such that I have the models & metric out-files at the same place.
-    # Leaving this be for now though!
-    parser.add_argument("outfile", help="Filepath or prefix for storing the training metrics")
-    parser.add_argument("basemodel", help="Base sequence model used to train this network")
-
-    # Adding optional parser arguments
+    parser.add_argument("out", help="Filepath or prefix for storing the training metrics")
 
     args = parser.parse_args()
 
-    train_path = args.datapath
-    val_path = args.val_path
-    test_path = args.test_path
-    metrics = args.metrics_file
-    basemodel = args.basemodel
-    filelen = len(train_path + '.labels')
-    chromsize = args.chromsize
-
-    # Other Parameters
-    batchsize = 400
-    seqlen = 500
-    convfilters = 240
-    strides = 15
-    pool_size = 15
-    lstmnodes = 32
-    dl1nodes = 1024
-    dl2nodes = 512
+    # Train the sequence-only network
+    run_seq_network(train_path=args.train_path, val_path=args.val_path, records_path=args.out)
 
 
 if __name__ == "__main__":
