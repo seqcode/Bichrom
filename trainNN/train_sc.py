@@ -68,6 +68,7 @@ def save_metrics(hist_object, pr_history, records_path):
     np.savetxt(records_path + 'trainingLoss.txt', loss, fmt='%1.2f')
     np.savetxt(records_path + 'valLoss.txt', val_loss, fmt='%1.2f')
     np.savetxt(records_path + 'valPRC.txt', val_pr, fmt='%1.2f')
+    return loss
 
 
 def transfer(train_path, val_path, basemodel, model, steps_per_epoch, batchsize, records_path):
@@ -84,13 +85,14 @@ def transfer(train_path, val_path, basemodel, model, steps_per_epoch, batchsize,
     val_data_generator = data_generator(val_path, 200000, seqlen=500)
     validation_data = val_data_generator.next()
     precision_recall_history = PrecisionRecall()
-    checkpointer = ModelCheckpoint(records_path + 'modelSC_epoch{epoch}.hdf5', verbose=1, save_best_only=False)
+    checkpointer = ModelCheckpoint(records_path + 'model_epoch{epoch}.hdf5', verbose=1, save_best_only=False)
 
-    hist = model.fit_generator(epochs=5, steps_per_epoch=steps_per_epoch, generator=train_data_generator,
+    hist = model.fit_generator(epochs=2, steps_per_epoch=steps_per_epoch, generator=train_data_generator,
                                validation_data=validation_data,
                                callbacks=[precision_recall_history, checkpointer])
 
-    save_metrics(hist_object=hist, pr_history=precision_recall_history, records_path=records_path)
+    loss = save_metrics(hist_object=hist, pr_history=precision_recall_history, records_path=records_path)
+    return loss
 
 
 def transfer_and_train_msc(train_path, val_path, no_of_chrom_tracks, basemodel,
@@ -102,4 +104,5 @@ def transfer_and_train_msc(train_path, val_path, no_of_chrom_tracks, basemodel,
     steps_per_epoch = training_set_size / batch_size
 
     model = add_new_layers(basemodel, chrom_size=no_of_chrom_tracks)
-    transfer(train_path, val_path, basemodel, model, steps_per_epoch, batch_size, records_path)
+    loss = transfer(train_path, val_path, basemodel, model, steps_per_epoch, batch_size, records_path)
+    return loss

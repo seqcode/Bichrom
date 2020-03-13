@@ -99,5 +99,5 @@ def build_and_train_net(hyperparams, train_path, val_path, batch_size, records_p
 
     # This saves all iterations of the model. But I should do an early stopping really.
     loss = train(model, train_path=train_path, val_path=val_path, steps_per_epoch=steps,
-          batch_size=batch_size, records_path=records_path)
+                 batch_size=batch_size, records_path=records_path)
     return loss

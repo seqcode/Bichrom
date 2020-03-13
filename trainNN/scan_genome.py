@@ -15,9 +15,6 @@ from helper import plot_distributions
 # user defined module
 import iterutils as iu
 
-# keras imports
-from keras.models import load_model
-
 
 def merge_generators(filename, batchsize, seqlen, mode):
     X = iu.train_generator(filename + ".seq", batchsize, seqlen, "seq", mode) 
@@ -81,7 +78,7 @@ def get_metrics(test_labels, test_probas, records_file):
     records_file.write("AUC PRC:{0}".format(prc_auc))
 
 
-def get_probabilities(filename, seq_len, model_file, outfile, mode):
+def get_probabilities(filename, seq_len, model, outfile, mode):
     """
     Get network-assigned probabilities
     :param filename: Input file to be loaded
@@ -92,7 +89,7 @@ def get_probabilities(filename, seq_len, model_file, outfile, mode):
     data_generator = merge_generators(filename=filename, batchsize=1000, seqlen=seq_len,
                                       mode='nr')  # Testing mode = non-repeating
     # Load the keras model
-    model = load_model(model_file)
+    # model = load_model(model_file)
     test_on_batch(data_generator, model, outfile, mode)
     probas = np.loadtxt(outfile)  # Need to change this, but not now! Change structure first.
     true_labels = np.loadtxt(filename + '.labels')
@@ -114,40 +111,26 @@ def combine_pr_curves(records_file, m_seq_probas, m_sc_probas, labels):
     plt.savefig(records_file + '.pr_curves.pdf')
 
 
-def main():
+def evaluate_models(sequence_len, filename, probas_out_seq, probas_out_sc, model_seq,
+                    model_sc, records_file_path):
 
-    sequence_len = 500
-
-    # Use an argparse module here.
-    filename = sys.argv[1]
-    # M-SEQ
-    probas_out_seq = sys.argv[2]
-    model_seq = sys.argv[3]
-    # M-SC
-    probas_out_sc = sys.argv[4]
-    model_sc = sys.argv[5]
-    # Output File
-    records_files_path = sys.argv[6]
-    records_files = open(records_files_path, "w")
+    # Define the file that contains testing metrics
+    records_files = open(records_file_path, "w")
 
     # Get the probabilities for both M-SEQ and M-SC models:
     # Note: Labels are the same for M-SC and M-SEQ
     true_labels, probas_seq = get_probabilities(filename=filename, seq_len=sequence_len,
-                                                model_file=model_seq, outfile=probas_out_seq, mode='seq_only')
+                                                model=model_seq, outfile=probas_out_seq, mode='seq_only')
 
     _, probas_sc = get_probabilities(filename=filename, seq_len=sequence_len,
-                                     model_file=model_sc, outfile=probas_out_sc, mode='sc')
+                                     model=model_sc, outfile=probas_out_sc, mode='sc')
 
     # Get the auROC and the auPRC for both M-SEQ and M-SC models:
     get_metrics(true_labels, probas_seq, records_files)
     get_metrics(true_labels, probas_sc, records_files)
 
     # Plot the P-R curves
-    combine_pr_curves(records_files_path, probas_seq, probas_sc, true_labels)
+    combine_pr_curves(records_file_path, probas_seq, probas_sc, true_labels)
 
     # Plot the posterior distributions of the recall:
-    plot_distributions(records_files_path, probas_seq, probas_sc, true_labels, fpr_thresh=0.01)
-
-
-if __name__ == "__main__":
-    main()
+    plot_distributions(records_file_path, probas_seq, probas_sc, true_labels, fpr_thresh=0.01)
