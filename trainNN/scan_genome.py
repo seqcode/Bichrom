@@ -17,9 +17,12 @@ import iterutils as iu
 
 
 def merge_generators(filename, batchsize, seqlen, mode):
-    X = iu.train_generator(filename + ".seq", batchsize, seqlen, "seq", mode) 
-    A = iu.train_generator(filename + ".chromtracks", batchsize, seqlen, "accessibility", mode)
-    y = iu.train_generator(filename + ".labels", batchsize, seqlen, "labels", mode)
+    X = iu.train_generator(filename + ".seq", batchsize,
+                           seqlen, "seq", mode)
+    A = iu.train_generator(filename + ".chromtracks", batchsize,
+                           seqlen, "accessibility", mode)
+    y = iu.train_generator(filename + ".labels", batchsize,
+                           seqlen, "labels", mode)
     while True:
         yield [X.next(), A.next()], y.next()
 
@@ -32,10 +35,15 @@ def test_on_batch(batch_generator, model, outfile, mode):
 
     Single held-out chromosomes can be tested directly.
 
-    :param batch_generator: a generator that yields sequence, chromatin and label vectors.
-    :param model: A trained Keras model
-    :param outfile: The outfile used for storing probabilities.
-    :return: None (Saves an output file with the probabilities for the test set )
+    Parameters:
+        batch_generator: generator
+            a generator that yields sequence, chromatin and label vectors.
+        model: Model
+            A trained Keras model
+        outfile: str
+            The outfile used for storing probabilities.
+    Returns: None
+        (Saves an output file with the probabilities for the test set )
     """
     counter = 0
     while True:
@@ -55,18 +63,20 @@ def test_on_batch(batch_generator, model, outfile, mode):
 
 def get_metrics(test_labels, test_probas, records_file):
     """
-
-    Takes the test labels and test probabilities, and calculates/
+    Takes the test labels and test probabilities, and calculates
     plots the following:
-
         a. P-R Curves
         b. auPRC
         c. auROC
         d. Posterior Distributions of the Recall at FPR=0.01
 
-    :param test_labels: n * 1 vector with the true labels ( 0 or 1 )
-    :param test_probas: n * 1 vector with the network probabilities
-    :return: None
+    Parameters:
+        test_labels: ndarray
+            n * 1 vector with the true labels ( 0 or 1 )
+        test_probas: ndarray
+            n * 1 vector with the network probabilities
+    Returns:
+         None
     """
     # Calculate auROC
     roc_auc = sklearn.metrics.roc_auc_score(test_labels, test_probas)
@@ -81,25 +91,32 @@ def get_metrics(test_labels, test_probas, records_file):
 def get_probabilities(filename, seq_len, model, outfile, mode):
     """
     Get network-assigned probabilities
-    :param filename: Input file to be loaded
-    :param seq_len: eg. 500
-    :return: probas
+
+    Parameters:
+        filename: str
+            Input file to be loaded
+        seq_len: int
+            Length of input DNA sequence
+    Returns:
+         probas: ndarray
+            An array of probabilities for the test set
+         true labels: ndarray
     """
     # Inputing a range of default values here, can be changed later.
-    data_generator = merge_generators(filename=filename, batchsize=1000, seqlen=seq_len,
-                                      mode='nr')  # Testing mode = non-repeating
+    data_generator = merge_generators(filename=filename, batchsize=1000,
+                                      seqlen=seq_len, mode='nr')
     # Load the keras model
     # model = load_model(model_file)
     test_on_batch(data_generator, model, outfile, mode)
-    probas = np.loadtxt(outfile)  # Need to change this, but not now! Change structure first.
+    probas = np.loadtxt(outfile)
     true_labels = np.loadtxt(filename + '.labels')
-
     return true_labels, probas
 
 
 def plot_pr_curve(test_labels, test_probas, color):
     # Get the PR values:
-    precision, recall, _ = precision_recall_curve(y_true=test_labels, probas_pred=test_probas)
+    precision, recall, _ = precision_recall_curve(y_true=test_labels,
+                                                  probas_pred=test_probas)
     plt.plot(recall, precision, c=color, lw=2.5)
     plt.xticks(fontsize=14)
     plt.yticks(fontsize=14)
@@ -111,19 +128,23 @@ def combine_pr_curves(records_file, m_seq_probas, m_sc_probas, labels):
     plt.savefig(records_file + '.pr_curves.pdf')
 
 
-def evaluate_models(sequence_len, filename, probas_out_seq, probas_out_sc, model_seq,
-                    model_sc, records_file_path):
+def evaluate_models(sequence_len, filename, probas_out_seq, probas_out_sc,
+                    model_seq, model_sc, records_file_path):
 
     # Define the file that contains testing metrics
     records_files = open(records_file_path, "w")
 
     # Get the probabilities for both M-SEQ and M-SC models:
     # Note: Labels are the same for M-SC and M-SEQ
-    true_labels, probas_seq = get_probabilities(filename=filename, seq_len=sequence_len,
-                                                model=model_seq, outfile=probas_out_seq, mode='seq_only')
+    true_labels, probas_seq = get_probabilities(filename=filename,
+                                                seq_len=sequence_len,
+                                                model=model_seq,
+                                                outfile=probas_out_seq,
+                                                mode='seq_only')
 
     _, probas_sc = get_probabilities(filename=filename, seq_len=sequence_len,
-                                     model=model_sc, outfile=probas_out_sc, mode='sc')
+                                     model=model_sc, outfile=probas_out_sc,
+                                     mode='sc')
 
     # Get the auROC and the auPRC for both M-SEQ and M-SC models:
     get_metrics(true_labels, probas_seq, records_files)
@@ -133,4 +154,5 @@ def evaluate_models(sequence_len, filename, probas_out_seq, probas_out_sc, model
     combine_pr_curves(records_file_path, probas_seq, probas_sc, true_labels)
 
     # Plot the posterior distributions of the recall:
-    plot_distributions(records_file_path, probas_seq, probas_sc, true_labels, fpr_thresh=0.01)
+    plot_distributions(records_file_path, probas_seq, probas_sc, true_labels,
+                       fpr_thresh=0.01)

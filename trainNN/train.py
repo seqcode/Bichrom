@@ -1,15 +1,3 @@
-"""
-Top-level function to train, test and plot performance metrics for:
-- sequence-only network
-- bimodal sequence-chromatin network
-
-The module performs the following functions in order:
-
-1. Train a sequence-only network.
-2. Train a sequence and prior chromatin network.
-3. Test both networks and plot metrics.
-"""
-
 import argparse
 import numpy as np
 from subprocess import call
@@ -44,38 +32,74 @@ def return_best_model(loss_vec, model_path):
 def run_seq_network(train_path, val_path, records_path):
     """
     Train M-SEQ. (Model Definition in README)
-    Save the model loss at each epoch & return the model with the lowest validation LOSS.
 
-    :param train_path: Path to the training data
-    :param val_path: Path to the validation data
-    :param records_path: Directory & prefix for output directory
-    :return: Trained M-SEQ model.
+    Parameters
+    ----------
+
+        train_path: str
+            Path to the training data.
+        val_path: str
+            Path to the validation data
+        records_path: str
+            Directory & prefix for output directory
+
+    Returns
+    -------
+
+        M-SEQ model: (keras model)
     """
 
-    # Make an output directory for saving the sequence models, validation metrics and logs.
-    records_path_seq = records_path + '.mseq/'
+    # Create an output directory for saving models + per-epoch logs.
+    records_path_seq = records_path + '/mseq/'
     call(['mkdir', records_path_seq])
-    # Params: current network parameters (Implement option to choose these using a random grid search)
+
+    # current hyper-parameters
     curr_params = Params()
 
-    # Training the network!
+    # train the network
     loss = build_and_train_net(curr_params, train_path, val_path,
-                               batch_size=curr_params.batchsize, records_path=records_path_seq)
+                               batch_size=curr_params.batchsize,
+                               records_path=records_path_seq)
+    # choose the model with the lowest validation loss
     model_seq = return_best_model(loss_vec=loss, model_path=records_path_seq)
     return model_seq
 
 
 def run_bimodal_network(train_path, val_path, records_path, no_of_chrom_tracks,
                         base_seq_model):
+    """
+        Train M-SC. (Model Definition in README)
 
-    # Make an output directory for saving the M-SC models, validation metrics and logs
-    records_path_sc = records_path + '.msc/'
+        Parameters
+        ----------
+
+            train_path: str
+                Path to the training data.
+            val_path: str
+                Path to the validation data
+            records_path: str
+                Directory & prefix for output directory
+            no_of_chrom_tracks: int
+                Number of prior chromatin sequencing experiments used as input
+            base_seq_model: keras model
+        Returns
+        -------
+
+            M-SC model: (keras model)
+        """
+
+    # Create an output directory for saving models + per-epoch logs.
+    records_path_sc = records_path + '/msc/'
     call(['mkdir', records_path_sc])
 
     curr_params = Params()
+
+    # train the network
     # loss = transfer_and_train_msc(train_path, val_path, no_of_chrom_tracks, base_seq_model,
     #                               batch_size=curr_params.batchsize,
     #                               records_path=records_path_sc)
+
+    # choose the model with the lowest validation loss
     loss = np.loadtxt(records_path_sc + 'trainingLoss.txt')
     model_sc = return_best_model(loss_vec=loss, model_path=records_path_sc)
     return model_sc
@@ -83,28 +107,36 @@ def run_bimodal_network(train_path, val_path, records_path, no_of_chrom_tracks,
 
 def main():
     parser = argparse.ArgumentParser(description='Train M-SEQ and M-SC')
-    parser.add_argument('train_path', help='Filepath + prefix to the training data')
-    parser.add_argument('val_path', help='Filepath + prefix to the validation data')
-    parser.add_argument('test_path', help='Filepath + prefix to the test data')
-    parser.add_argument('no_of_chrom_tracks', help='Int, number of chromatin data tracks')
+    parser.add_argument('train_path', help='Path for training data')
+    parser.add_argument('val_path', help='Path for validation data')
+    parser.add_argument('test_path', help='Path for test data')
+    parser.add_argument('no_of_chrom_tracks',
+                        help='Number of prior chromatin experiments.')
 
-    # I'm going to change structure such that I have the models & metric out-files at the same place.
-    parser.add_argument("out", help="Filepath or prefix for storing the training metrics")
+    parser.add_argument('out', help='Output directory')
 
     args = parser.parse_args()
 
-    # Train the sequence-only network
-    mseq = run_seq_network(train_path=args.train_path, val_path=args.val_path, records_path=args.out)
+    # Create output directory:
+    outdir = args.out
+    call(['mkdir', outdir])
 
-    # Train the bimodal network
-    msc = run_bimodal_network(train_path=args.train_path, val_path=args.val_path,
-                              records_path=args.out, no_of_chrom_tracks=int(args.no_of_chrom_tracks),
+    # Train the sequence-only network (M-SEQ)
+    mseq = run_seq_network(train_path=args.train_path, val_path=args.val_path,
+                           records_path=outdir)
+
+    # Train the bimodal network (M-SC)
+    msc = run_bimodal_network(train_path=args.train_path,
+                              val_path=args.val_path, records_path=outdir,
+                              no_of_chrom_tracks=int(args.no_of_chrom_tracks),
                               base_seq_model=mseq)
 
-    # Evaluate both models on held-out test sets and plot basic metrics
-    evaluate_models(sequence_len=500, filename=args.test_path, probas_out_seq=args.out + '.MSEQ_testprobs.txt',
-                    probas_out_sc=args.out + 'MSC_testprobs.txt', model_seq=mseq,
-                    model_sc=msc, records_file_path=args.out + 'test')
+    # Evaluate both models on held-out test sets and plot metrics
+    evaluate_models(sequence_len=500, filename=args.test_path,
+                    probas_out_seq=args.out + '.MSEQ_testprobs.txt',
+                    probas_out_sc=args.out + 'MSC_testprobs.txt',
+                    model_seq=mseq, model_sc=msc,
+                    records_file_path=args.out + 'test')
 
 
 if __name__ == "__main__":

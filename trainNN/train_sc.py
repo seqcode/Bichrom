@@ -13,14 +13,31 @@ from keras.callbacks import ModelCheckpoint
 
 
 def data_generator(filename, batchsize, seqlen):
-    X = iu.train_generator(filename + '.seq', batchsize, seqlen, 'seq', 'repeat')
-    C = iu.train_generator(filename + '.chromtracks', batchsize, seqlen, 'chrom', 'repeat')
-    y = iu.train_generator(filename + '.labels', batchsize, seqlen, 'labels', 'repeat')
+    X = iu.train_generator(filename + '.seq', batchsize,
+                           seqlen, 'seq', 'repeat')
+    C = iu.train_generator(filename + '.chromtracks', batchsize,
+                           seqlen, 'chrom', 'repeat')
+    y = iu.train_generator(filename + '.labels', batchsize,
+                           seqlen, 'labels', 'repeat')
     while True:
         yield [X.next(), C.next()], y.next()
 
 
 def add_new_layers(base_model, chrom_size):
+    """
+
+    Takes a pre-existing M-SEQ (Definition in README) & adds structure to \
+    use it as part of a bimodal DNA sequence + prior chromatin network
+
+    Parameters:
+        base_model: keras Model
+            A pre-trained sequence-only (M-SEQ) model
+        chrom_size: int
+            The expected number of chromatin tracks
+
+    Returns:
+        model: a Keras Model
+    """
 
     def permute(x):
         return K.permute_dimensions(x, (0, 2, 1))
@@ -54,7 +71,8 @@ class PrecisionRecall(Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         """ monitor PR """
-        x_val, c_val, y_val = self.validation_data[0], self.validation_data[1], self.validation_data[2]
+        x_val, c_val, y_val = self.validation_data[0], self.validation_data[1],\
+                              self.validation_data[2]
         predictions = self.model.predict([x_val, c_val])
         aupr = auprc(y_val, predictions)
         self.val_auprc.append(aupr)
@@ -71,7 +89,33 @@ def save_metrics(hist_object, pr_history, records_path):
     return loss
 
 
-def transfer(train_path, val_path, basemodel, model, steps_per_epoch, batchsize, records_path):
+def transfer(train_path, val_path, basemodel, model, steps_per_epoch,
+             batchsize, records_path):
+    """
+
+        Trains the M-SC, transferring weights from the pre-trained M-SEQ.
+        The M-SEQ weights are kept fixed except for the final layer.
+
+        Parameters:
+            train_path: str
+                Path + prefix to training data
+            val_path: str
+                Path + prefix to the validation data
+            basemodel: Model
+                Pre-trained keras M-SEQ model
+            model: Model
+                Defined bimodal network
+            steps_per_epoch: int
+                Len(training_data/batchsize)
+            batchsize: int
+                Batch size used in SGD
+            records_path: str
+                Path + prefix to output directory
+
+        Returns:
+            loss: ndarray
+                An array with the validation loss at each epoch
+        """
 
     # Making the base model layers non-trainable:
     for layer in basemodel.layers:
@@ -85,13 +129,17 @@ def transfer(train_path, val_path, basemodel, model, steps_per_epoch, batchsize,
     val_data_generator = data_generator(val_path, 200000, seqlen=500)
     validation_data = val_data_generator.next()
     precision_recall_history = PrecisionRecall()
-    checkpointer = ModelCheckpoint(records_path + 'model_epoch{epoch}.hdf5', verbose=1, save_best_only=False)
+    checkpointer = ModelCheckpoint(records_path + 'model_epoch{epoch}.hdf5',
+                                   verbose=1, save_best_only=False)
 
-    hist = model.fit_generator(epochs=2, steps_per_epoch=steps_per_epoch, generator=train_data_generator,
+    hist = model.fit_generator(epochs=2, steps_per_epoch=steps_per_epoch,
+                               generator=train_data_generator,
                                validation_data=validation_data,
-                               callbacks=[precision_recall_history, checkpointer])
+                               callbacks=[precision_recall_history,
+                                          checkpointer])
 
-    loss = save_metrics(hist_object=hist, pr_history=precision_recall_history, records_path=records_path)
+    loss = save_metrics(hist_object=hist, pr_history=precision_recall_history,
+                        records_path=records_path)
     return loss
 
 
@@ -104,5 +152,6 @@ def transfer_and_train_msc(train_path, val_path, no_of_chrom_tracks, basemodel,
     steps_per_epoch = training_set_size / batch_size
 
     model = add_new_layers(basemodel, chrom_size=no_of_chrom_tracks)
-    loss = transfer(train_path, val_path, basemodel, model, steps_per_epoch, batch_size, records_path)
+    loss = transfer(train_path, val_path, basemodel, model, steps_per_epoch,
+                    batch_size, records_path)
     return loss
