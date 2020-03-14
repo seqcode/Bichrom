@@ -1,11 +1,4 @@
-"""
-Iterate over the whole genome (or test chromosome) to measure genome-wide performance of a trained
-neural network.
-Current Status: Testing for both M-SEQ and M-SC.
-"""
-
 from __future__ import division
-import sys
 import numpy as np
 import sklearn.metrics
 from sklearn.metrics import precision_recall_curve
@@ -30,20 +23,14 @@ def merge_generators(filename, batchsize, seqlen, mode):
 def test_on_batch(batch_generator, model, outfile, mode):
     """
     Get probabilities for each test data point.
-    The reason that this is implemented in a batch is because \
+    The reason that this is implemented in a batch is because
     the whole genome cannot be loaded without batching.
-
-    Single held-out chromosomes can be tested directly.
-
     Parameters:
-        batch_generator: generator
-            a generator that yields sequence, chromatin and label vectors.
-        model: Model
-            A trained Keras model
-        outfile: str
-            The outfile used for storing probabilities.
-    Returns: None
-        (Saves an output file with the probabilities for the test set )
+        batch_generator (generator): a generator that yields sequence, chromatin
+        and label vectors.
+        model (keras Model): A trained Keras model
+        outfile (str): The outfile used for storing probabilities.
+    Returns: None (Saves an output file with the probabilities for the test set )
     """
     counter = 0
     while True:
@@ -63,20 +50,16 @@ def test_on_batch(batch_generator, model, outfile, mode):
 
 def get_metrics(test_labels, test_probas, records_file):
     """
-    Takes the test labels and test probabilities, and calculates
+    Takes the test labels and test probabilities, and calculates and/or
     plots the following:
-        a. P-R Curves
-        b. auPRC
-        c. auROC
-        d. Posterior Distributions of the Recall at FPR=0.01
-
+    a. P-R Curves
+    b. auPRC
+    c. auROC
+    d. Posterior Distributions of the Recall at FPR=0.01
     Parameters:
-        test_labels: ndarray
-            n * 1 vector with the true labels ( 0 or 1 )
-        test_probas: ndarray
-            n * 1 vector with the network probabilities
-    Returns:
-         None
+        test_labels (ndarray): n * 1 vector with the true labels ( 0 or 1 )
+        test_probas (ndarray): n * 1 vector with the network probabilities
+    Returns: None
     """
     # Calculate auROC
     roc_auc = sklearn.metrics.roc_auc_score(test_labels, test_probas)
@@ -91,16 +74,12 @@ def get_metrics(test_labels, test_probas, records_file):
 def get_probabilities(filename, seq_len, model, outfile, mode):
     """
     Get network-assigned probabilities
-
     Parameters:
-        filename: str
-            Input file to be loaded
-        seq_len: int
-            Length of input DNA sequence
+        filename (str): Input file to be loaded
+        seq_len (int): Length of input DNA sequence
     Returns:
-         probas: ndarray
-            An array of probabilities for the test set
-         true labels: ndarray
+         probas (ndarray): An array of probabilities for the test set
+         true labels (ndarray): True test-set labels
     """
     # Inputing a range of default values here, can be changed later.
     data_generator = merge_generators(filename=filename, batchsize=1000,

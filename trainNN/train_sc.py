@@ -25,16 +25,11 @@ def data_generator(filename, batchsize, seqlen):
 
 def add_new_layers(base_model, chrom_size):
     """
-
     Takes a pre-existing M-SEQ (Definition in README) & adds structure to \
     use it as part of a bimodal DNA sequence + prior chromatin network
-
     Parameters:
-        base_model: keras Model
-            A pre-trained sequence-only (M-SEQ) model
-        chrom_size: int
-            The expected number of chromatin tracks
-
+        base_model (keras Model): A pre-trained sequence-only (M-SEQ) model
+        chrom_size (int) : The expected number of chromatin tracks
     Returns:
         model: a Keras Model
     """
@@ -70,7 +65,6 @@ class PrecisionRecall(Callback):
         self.train_auprc = []
 
     def on_epoch_end(self, epoch, logs=None):
-        """ monitor PR """
         x_val, c_val, y_val = self.validation_data[0], self.validation_data[1],\
                               self.validation_data[2]
         predictions = self.model.predict([x_val, c_val])
@@ -92,30 +86,21 @@ def save_metrics(hist_object, pr_history, records_path):
 def transfer(train_path, val_path, basemodel, model, steps_per_epoch,
              batchsize, records_path):
     """
+    Trains the M-SC, transferring weights from the pre-trained M-SEQ.
+    The M-SEQ weights are kept fixed except for the final layer.
 
-        Trains the M-SC, transferring weights from the pre-trained M-SEQ.
-        The M-SEQ weights are kept fixed except for the final layer.
+    Parameters:
+        train_path (str): Path + prefix to training data
+        val_path (str): Path + prefix to the validation data
+        basemodel (Model): Pre-trained keras M-SEQ model
+        model (Model): Defined bimodal network
+        steps_per_epoch (int): Len(training_data/batchsize)
+        batchsize (int): Batch size used in SGD
+        records_path (str): Path + prefix to output directory
 
-        Parameters:
-            train_path: str
-                Path + prefix to training data
-            val_path: str
-                Path + prefix to the validation data
-            basemodel: Model
-                Pre-trained keras M-SEQ model
-            model: Model
-                Defined bimodal network
-            steps_per_epoch: int
-                Len(training_data/batchsize)
-            batchsize: int
-                Batch size used in SGD
-            records_path: str
-                Path + prefix to output directory
-
-        Returns:
-            loss: ndarray
-                An array with the validation loss at each epoch
-        """
+    Returns:
+        loss (ndarray): An array with the validation loss at each epoch
+    """
 
     # Making the base model layers non-trainable:
     for layer in basemodel.layers:

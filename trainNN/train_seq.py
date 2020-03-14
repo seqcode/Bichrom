@@ -38,15 +38,11 @@ class PrecisionRecall(Callback):
 def build_model(params, seq_length):
     """
     Define a Keras graph model with DNA sequence as input.
-
     Parameters:
-        params: class
-            A class with a set of hyper-parameters
-        seq_length: int
-            Length of input sequences
-
-    Returns: keras model
-        A keras model
+        params (class): A class with a set of hyper-parameters
+        seq_length (int): Length of input sequences
+    Returns
+        model (keras model): A keras model
     """
     seq_input = Input(shape=(seq_length, 4,), name='seq')
     xs = Conv1D(params.filter_size, params.n_filters,
@@ -81,25 +77,16 @@ def train(model, train_path, val_path, steps_per_epoch, batch_size,
           records_path):
     """
     Train the Keras graph model
-
-        Parameters:
-            model: keras Model
-            The Model defined in build_model
-            train_path: str
-                Path to training data
-            val_path: str
-                Path to validation data
-            steps_per_epoch: int
-                Len(training_data)/batch_size
-            batch_size: int
-                Size of mini-batches used during training
-            records_path: str
-                Path + prefix to output directory
-
-        Returns:
-            loss: ndarray
-                An array with the validation loss at each epoch
-        """
+    Parameters:
+        model (keras Model): The Model defined in build_model
+        train_path (str): Path to training data
+        val_path (str): Path to validation data
+        steps_per_epoch (int): Len(training_data)/batch_size
+        batch_size (int): Size of mini-batches used during training
+        records_path (str): Path + prefix to output directory
+    Returns:
+        loss (ndarray): An array with the validation loss at each epoch
+    """
 
     model.compile(loss='binary_crossentropy', optimizer='adam')
     train_generator = data_generator(train_path, batch_size, seqlen=500)

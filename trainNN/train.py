@@ -32,23 +32,13 @@ def return_best_model(loss_vec, model_path):
 def run_seq_network(train_path, val_path, records_path):
     """
     Train M-SEQ. (Model Definition in README)
-
-    Parameters
-    ----------
-
-        train_path: str
-            Path to the training data.
-        val_path: str
-            Path to the validation data
-        records_path: str
-            Directory & prefix for output directory
-
-    Returns
-    -------
-
-        M-SEQ model: (keras model)
+    Parameters:
+        train_path (str): Path to the training data.
+        val_path (str): Path to the validation data
+        records_path (str): Directory & prefix for output directory
+    Returns:
+        M-SEQ model (Model): A keras model
     """
-
     # Create an output directory for saving models + per-epoch logs.
     records_path_seq = records_path + '/mseq/'
     call(['mkdir', records_path_seq])
@@ -68,25 +58,17 @@ def run_seq_network(train_path, val_path, records_path):
 def run_bimodal_network(train_path, val_path, records_path, no_of_chrom_tracks,
                         base_seq_model):
     """
-        Train M-SC. (Model Definition in README)
-
-        Parameters
-        ----------
-
-            train_path: str
-                Path to the training data.
-            val_path: str
-                Path to the validation data
-            records_path: str
-                Directory & prefix for output directory
-            no_of_chrom_tracks: int
-                Number of prior chromatin sequencing experiments used as input
-            base_seq_model: keras model
-        Returns
-        -------
-
-            M-SC model: (keras model)
-        """
+    Train M-SC. (Model Definition in README)
+    Parameters:
+        train_path (str): Path to the training data.
+        val_path (str): Path to the validation data
+        records_path (str): Directory & prefix for output directory
+        no_of_chrom_tracks (int): Number of prior chromatin sequencing
+        experiments used as input
+        base_seq_model: keras model
+    Returns:
+        M-SC model (keras Model): trained model
+    """
 
     # Create an output directory for saving models + per-epoch logs.
     records_path_sc = records_path + '/msc/'
