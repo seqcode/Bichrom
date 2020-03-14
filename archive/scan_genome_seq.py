@@ -7,7 +7,7 @@ import numpy as np
 import sklearn.metrics
 # import sklearn.model_selection as ms
 # user defined module
-import iterutils as iu
+import trainNN.iterutils as iu
 # keras imports
 from keras.models import Model
 from keras.layers import Dense, Dropout, Activation, Flatten, concatenate, Input, LSTM, Bidirectional

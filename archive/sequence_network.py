@@ -9,8 +9,8 @@ try:
     from keras.layers import Conv1D, MaxPooling1D, BatchNormalization
     from keras.optimizers import SGD, Adam
     from keras.callbacks import EarlyStopping
-    import iterutils_mm as  mm
-    import iterutils as iu
+    import trainNN.iterutils_mm as  mm
+    import trainNN.iterutils as iu
     from keras.callbacks import Callback
     from keras.callbacks import ModelCheckpoint
     from subprocess import call
