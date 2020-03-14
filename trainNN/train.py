@@ -77,7 +77,8 @@ def run_bimodal_network(train_path, val_path, records_path, no_of_chrom_tracks,
     curr_params = Params()
 
     # train the network
-    # loss = transfer_and_train_msc(train_path, val_path, no_of_chrom_tracks, base_seq_model,
+    # loss = transfer_and_train_msc(train_path, val_path, no_of_chrom_tracks,
+    #                               base_seq_model,
     #                               batch_size=curr_params.batchsize,
     #                               records_path=records_path_sc)
 
@@ -114,11 +115,15 @@ def main():
                               base_seq_model=mseq)
 
     # Evaluate both models on held-out test sets and plot metrics
+    probas_out_seq = outdir + '/mseq/' + 'testProbs.txt'
+    probas_out_sc = outdir + '/msc/' + 'testProbs.txt'
+    records_file_path = outdir + '/metrics'
+    print records_file_path
+
     evaluate_models(sequence_len=500, filename=args.test_path,
-                    probas_out_seq=args.out + '.MSEQ_testprobs.txt',
-                    probas_out_sc=args.out + 'MSC_testprobs.txt',
+                    probas_out_seq=probas_out_seq, probas_out_sc=probas_out_sc,
                     model_seq=mseq, model_sc=msc,
-                    records_file_path=args.out + 'test')
+                    records_file_path=records_file_path)
 
 
 if __name__ == "__main__":
