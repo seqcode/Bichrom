@@ -48,7 +48,7 @@ def test_on_batch(batch_generator, model, outfile, mode):
             break
 
 
-def get_metrics(test_labels, test_probas, records_file):
+def get_metrics(test_labels, test_probas, records_file, model_name):
     """
     Takes the test labels and test probabilities, and calculates and/or
     plots the following:
@@ -59,16 +59,19 @@ def get_metrics(test_labels, test_probas, records_file):
     Parameters:
         test_labels (ndarray): n * 1 vector with the true labels ( 0 or 1 )
         test_probas (ndarray): n * 1 vector with the network probabilities
+        records_file (str): Path to output file
+        model_name (str): Model being tested
     Returns: None
     """
     # Calculate auROC
     roc_auc = sklearn.metrics.roc_auc_score(test_labels, test_probas)
     # Calculate auPRC
     prc_auc = sklearn.metrics.average_precision_score(test_labels, test_probas)
-
-    # Write auROC and auPRC to records file
-    records_file.write("AUC ROC:{0}".format(roc_auc))
-    records_file.write("AUC PRC:{0}".format(prc_auc))
+    records_file.write('')
+    # Write auROC and auPRC to records file.
+    records_file.write("Model:{0}\n".format(model_name))
+    records_file.write("AUC ROC:{0}\n".format(roc_auc))
+    records_file.write("AUC PRC:{0}\n".format(prc_auc))
 
 
 def get_probabilities(filename, seq_len, model, outfile, mode):
@@ -111,7 +114,7 @@ def evaluate_models(sequence_len, filename, probas_out_seq, probas_out_sc,
                     model_seq, model_sc, records_file_path):
 
     # Define the file that contains testing metrics
-    records_files = open(records_file_path, "w")
+    records_files = open(records_file_path + '.txt', "w")
 
     # Get the probabilities for both M-SEQ and M-SC models:
     # Note: Labels are the same for M-SC and M-SEQ
@@ -126,8 +129,8 @@ def evaluate_models(sequence_len, filename, probas_out_seq, probas_out_sc,
                                      mode='sc')
 
     # Get the auROC and the auPRC for both M-SEQ and M-SC models:
-    get_metrics(true_labels, probas_seq, records_files)
-    get_metrics(true_labels, probas_sc, records_files)
+    get_metrics(true_labels, probas_seq, records_files, 'MSEQ')
+    get_metrics(true_labels, probas_sc, records_files, 'MSC')
 
     # Plot the P-R curves
     combine_pr_curves(records_file_path, probas_seq, probas_sc, true_labels)
