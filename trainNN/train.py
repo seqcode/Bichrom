@@ -77,10 +77,10 @@ def run_bimodal_network(train_path, val_path, records_path, no_of_chrom_tracks,
     curr_params = Params()
 
     # train the network
-    # loss = transfer_and_train_msc(train_path, val_path, no_of_chrom_tracks,
-    #                               base_seq_model,
-    #                               batch_size=curr_params.batchsize,
-    #                               records_path=records_path_sc)
+    loss = transfer_and_train_msc(train_path, val_path, no_of_chrom_tracks,
+                                  base_seq_model,
+                                  batch_size=curr_params.batchsize,
+                                  records_path=records_path_sc)
 
     # choose the model with the lowest validation loss
     loss = np.loadtxt(records_path_sc + 'trainingLoss.txt')
@@ -95,11 +95,9 @@ def main():
     parser.add_argument('test_path', help='Path for test data')
     parser.add_argument('no_of_chrom_tracks',
                         help='Number of prior chromatin experiments.')
-
     parser.add_argument('out', help='Output directory')
 
     args = parser.parse_args()
-
     # Create output directory:
     outdir = args.out
     call(['mkdir', outdir])
