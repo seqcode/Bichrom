@@ -12,8 +12,6 @@ def extraction_function(model):
     Returns:
         Keras function that returns network embeddings
     """
-    for idx, layer in enumerate(model.layers):
-        print idx, layer.name
     seq_input = model.get_layer('seq').input
     chrom_input = model.get_layer('chrom_input').input
     network_embedding = model.layers[-1].input
