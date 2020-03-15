@@ -1,9 +1,6 @@
 from __future__ import division
-import numpy as np
 import keras.backend as K
-import matplotlib.pyplot as plt
 import seaborn as sns
-import math
 from pylab import *
 
 
@@ -16,27 +13,25 @@ def extraction_function(model):
         Keras function that returns network embeddings
     """
     for idx, layer in enumerate(model.layers):
-        print idx, layer
-    seq_input = model.layers[0].input    # need to use layer names here
-    # chrom_input = model.layers[3].input  # need to use layer names here. # why was this 5 some other time?
-    chrom_input = model.layers[6].input # Model Dependentt!!!!
+        print idx, layer.name
+    seq_input = model.get_layer('seq').input
+    chrom_input = model.get_layer('chrom_input').input
     network_embedding = model.layers[-1].input
     return K.function([seq_input, chrom_input, K.learning_phase()], [network_embedding])
 
 
-def get_embeddings(model, input_data):
+def get_embeddings(model, seq_input, chrom_input):
     """
     Get the network embeddings for the input dataset
     Parameters:
         model: A trained model in ".hdf5" format
-        input_data: This should be a (seq, chrom) tuple
+        seq_input: This should be a onehot seq tensor
+        chrom_input: This should be a chromatin vector
     Returns:
         Supervised embedding in the sequence-chromatin space.
         This embedding forms a 2 x n matrix, where n is the lenght of the
         input dataset, or the number of input data points
     """
-    # get the sequence and chromatin inputs:
-    seq_input, chrom_input = input_data
     # use the defined Keras function to get activations:
     extract_activations = extraction_function(model)
     # get and reshape the embedding!
@@ -53,14 +48,12 @@ def get_embeddings(model, input_data):
     return embedding
 
 
-def get_embeddings_low_mem(model, input_data):
+def get_embeddings_low_mem(model, seq_input, chrom_input):
     """
     Identical in function to get_embeddings, however can work on lower memory
     by loading large datasets in batches. Preferable to get_embeddings() when
     working with the whole genome.
     """
-    # get the sequence and chromatin inputs:
-    seq_input, chrom_input = input_data
     # use the defined Keras function to get activations:
     extract_activations = extraction_function(model)
     batch_list = []  # contains arrays with embeddings for each batch
@@ -185,58 +178,3 @@ def plot_embeddings_bound_only(out_path, embedding, neg_embedding):
     plt.ylabel('Chromatin sub-network activations', fontsize=14)
     fig.set_size_inches(6, 6)
     plt.savefig(out_path + "Joint_embedding_bound_only.pdf")
-
-
-def plot_split_embeddings(out_path, embedding):
-    """
-    Plot the joint sequence and chromatin embeddings for bound loci. These
-    embeddings are split by the median sequence scores.
-    Parameters:
-        out_path: Directory to store the output figures
-        embedding: Embeddings for the positive or bound set
-        neg_embedding: Embeddings for a randomly sampled unbound set
-    Returns:
-        None
-    """
-    seq_score = embedding[:, 0]
-    chromatin_score = embedding[:, 1]
-
-    # Determine the color threshold automatically
-    # print np.sum(seq_score > 4)/len(seq_score)
-    q1 = np.quantile(seq_score, 0.25)
-    q4 = np.quantile(seq_score, 0.75)
-    print q1, q4
-    # Figure 1
-    sns.set_style('ticks')
-    fig, ax = plt.subplots()
-    fig.subplots_adjust(left=.15, bottom=.15, right=.95, top=.95)
-    # Top quartile
-    plt.scatter(x=seq_score[seq_score >= q4], y=chromatin_score[seq_score >= q4], s=4, c='#1F618D', alpha=0.5)
-    # Middle data
-    plt.scatter(x=seq_score[(seq_score >= q1) & (seq_score < q4)],
-                y=chromatin_score[(seq_score >= q1) & (seq_score < q4)], s=4, c='#AEB6BF', alpha=0.5)
-    # Bottom quartile
-    plt.scatter(x=seq_score[seq_score < q1], y=chromatin_score[seq_score < q1], s=4, c='#85C1E9', alpha=0.5)
-    for axis in ['top', 'bottom', 'left', 'right']:
-        ax.spines[axis].set_linewidth(1.5)
-    plt.xticks(fontsize=10)
-    plt.yticks(fontsize=10)
-    plt.xlabel('Sequence sub-network activations', fontsize=14)
-    plt.ylabel('Chromatin sub-network activations', fontsize=14)
-    fig.set_size_inches(6, 6)
-    plt.savefig(out_path + "Embeddings_split.pdf")
-
-    # Figure 2: KDE PLOTS
-    sns.set_style('ticks')
-    fig, ax = plt.subplots()
-    fig.subplots_adjust(left=.15, bottom=.15, right=.95, top=.95)
-    sns.kdeplot(chromatin_score[seq_score > 4], color='#D68910')
-    sns.kdeplot(chromatin_score[seq_score < 4], color='#2471A3')
-    for axis in ['top', 'bottom', 'left', 'right']:
-        ax.spines[axis].set_linewidth(1.5)
-    plt.xticks(fontsize=8)
-    plt.yticks(fontsize=8)
-    plt.xlabel('Chromatin sub-network activations', fontsize=12)
-    plt.ylabel('Frequency', fontsize=14)
-    fig.set_size_inches(6, 4)
-    plt.savefig(out_path + "Embeddings_split_density.pdf")
