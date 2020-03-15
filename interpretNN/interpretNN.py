@@ -52,7 +52,7 @@ def get_data(datapath):
     return b_seq_data, b_chromatin_data, ub_seq_data, ub_chromatin_data
 
 
-def embed(datapath, model, b_seq_data, b_chromatin_data, ub_seq_data,
+def embed(outdir, model, b_seq_data, b_chromatin_data, ub_seq_data,
           ub_chromatin_data):
     """
     Loads the bound data & extracts the joint embeddings
@@ -60,34 +60,39 @@ def embed(datapath, model, b_seq_data, b_chromatin_data, ub_seq_data,
     The function extracts the network embeddings into the final logistic node.
 
     Parameters:
-        datapath (str): path to the bound files.
+        outpath (str): output directory
         model (Model): trained model
-        input_data (tuple): Contains X (seq) and C (chromatin) tensors
+        b_seq_data (ndarray): onehot sequence tensor
+        b_chromatin_data (ndarray): bound onehot chromatin tensor
+        ub_seq_data (ndarray): unbound onehot sequence tensor
+        ub_chromatin_data (ndarray): unbound chromatin tensor
 
     Returns: None
-        Saves both the postive and negative embedding matrices to the defined outfile.
+        Saves both the positive and negative embedding matrices
+        and plots to the specified output directory.
     """
     # Extract and save the embeddings of bound and unbound sets to file.
-    embedding = get_embeddings(model, input_data)
+    embeddings_bound = get_embeddings(model, b_seq_data, b_chromatin_data)
     # Extract and save the embeddings of a random negative set
-    unbound_input = get_random_sample_shuffled(datapath + '.shuffled')
-    embedding_negative = get_embeddings_low_mem(model, unbound_input)
+    embeddings_unbound = get_embeddings_low_mem(model, ub_seq_data,
+                                                ub_chromatin_data)
 
     # Creating the outfile
-    out_path = datapath + '.figure3/'
+    call(['mkdir', outdir])
+    out_path = outdir + '/embeddings/'
     call(['mkdir', out_path])
     # Saving the embeddings to outfile
-    np.savetxt(datapath + ".embedding.txt", embedding)
-    np.savetxt(datapath + '.negative.embedding.txt', embedding_negative)
+    np.savetxt(out_path + "bound_embedding.txt", embeddings_bound)
+    np.savetxt(out_path + 'unbound_embedding.txt', embeddings_unbound)
 
     # Plotting
     # Plot 2-D embeddings: Bound + Unbound Sites
-    plot_embeddings(out_path, embedding, embedding_negative)
+    plot_embeddings(out_path, embeddings_bound, embeddings_unbound)
     # Plot 2-D embeddings: Bound only
-    plot_embeddings_bound_only(out_path, embedding, embedding_negative)
+    plot_embeddings_bound_only(out_path, embeddings_bound, embeddings_unbound)
     # Plot marginal 1D distributions:
-    plot_1d_seq(out_path, embedding, embedding_negative)
-    plot_1d_chrom(out_path, embedding, embedding_negative)
+    plot_1d_seq(out_path, embeddings_bound, embeddings_unbound)
+    plot_1d_chrom(out_path, embeddings_bound, embeddings_unbound)
 
 
 def main():
@@ -96,17 +101,21 @@ def main():
     parser = argparse.ArgumentParser(description='Learn Latent Embeddings',
                                      prog='interpretNN')
     # adding parser arguments
-    # parser.add_argument('modelpath', help='Path to trained M-SC models')
+    parser.add_argument('model', help='Path to trained M-SC models')
     parser.add_argument('datapath', help='Path to test data')
+    parser.add_argument('out', help='outdir')
 
     args = parser.parse_args()
-    # Load the model, as well as extract the bound data for the joint embeddings
-    # model = load_model(args.model)
 
-    input_data = get_data(args.datapath)
-    # Load the bound data and extract the joint embeddings
-    # Need to alter this such the unbound data is done within this program.
-    # embed(args.datapath, model, input_data)
+    # Identify the best model:
+    model = load_model(args.model)
+
+    # load bound & unbound data
+    b_seq_data, b_chromatin_data, ub_seq_data, ub_chromatin_data = get_data(args.datapath)
+    # extract, save and plot 2-D embeddings
+    embed(outdir=args.out, model=model, b_chromatin_data=b_chromatin_data,
+          b_seq_data=b_seq_data, ub_chromatin_data=ub_chromatin_data,
+          ub_seq_data=ub_seq_data)
 
 
 if __name__ == "__main__":
