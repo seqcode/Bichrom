@@ -1,4 +1,7 @@
 import numpy as np
+import pandas as pd
+
+np.random.seed(1)
 
 
 def make_onehot(buf, seq_length):
@@ -9,74 +12,64 @@ def make_onehot(buf, seq_length):
 
 
 def load_data(datapath):
-    # The idea is to load everything without using a generator
-    sequence = np.loadtxt(datapath + ".seq", dtype=str)
-    X = make_onehot(sequence, 500)
-    # Loading the chromatin data
-    C = np.loadtxt(datapath + ".chromtracks", dtype=float)
-    # Loading the labels
-    labels = np.loadtxt(datapath + ".labels", dtype=int)
-    bedfile = np.loadtxt(datapath + '.bed', dtype=str)
-    # Is there anything else I need now? No don't think so. # Cool!
-    return X, C, labels, bedfile
+    # Load test data (without using a generator)
+    # Note: Switching to using Pandas instead of numpy loadtxt due to
+    # the faster pandas load time.
+    # sequence
+    seq = pd.read_csv(datapath + '.seq', header=None)
+    seq = np.array(seq).reshape(-1,)
+    seq_dat_onehot = make_onehot(seq, 500)
+    # prior chromatin
+    chrom_dat = pd.read_csv(datapath + ".chromtracks", header=None, sep=None)
+    # labels
+    labels = pd.read_csv(datapath + '.labels', header=None)
+    labels = np.array(labels).reshape(-1,)
+    # bedfile
+    bed_array = pd.read_csv(datapath + '.bed', delimiter='\t', header=None)
+    return seq_dat_onehot, chrom_dat.values, labels, bed_array
 
 
-def get_bound_data(datapath):
-    loaded_data = load_data(datapath)
-    X, C, labels, bedfile = loaded_data
-    # Now I need to subset these guys into bound sites only
-    bound_indices = np.array(labels == 1)
-    print bound_indices
-    # Subset data
-    Xbound = X[bound_indices]
-    Cbound = C[bound_indices]
-    labelsbound = labels[bound_indices]  # This is primarily for code compatibility. I do not need to use this.
-    bedBound = bedfile[bound_indices]
-    # save these bound files as re-usable outputs:
-    np.save(datapath + '.bound.seq.npy', Xbound)
-    np.save(datapath + '.bound.chromtracks.npy', Cbound)
-    np.save(datapath + '.bound.labels.npy', labelsbound)
-    np.savetxt(datapath + '.bound.bed', bedBound, fmt='%s')
-    # return
-    return Xbound, Cbound
+def get_bound_data(seq_data, chromatin_data, test_labels, bed_array):
+    """
+    Take as input the test data, and returns the bound subset.
+    Parameters:
+        seq_data (ndarray): shape: N * 500 (seq_len) * 4
+        chromatin_data (ndarray): shape: N * 10 * no_of_Chrom_Tracks
+        test_labels (ndarray): shape: N * 1
+        bed_array (ndarray): shape: N * 3
+
+    Returns:
+        bound seq_data and bound chromatin_data
+    """
+    # identify bound sites.
+    bound_indices = np.array(test_labels == 1)
+    # subset data
+    bound_seq_data = seq_data[bound_indices]
+    bound_chromatin_data = chromatin_data[bound_indices]
+    bound_bed_array = bed_array.loc[bound_indices]
+    return bound_seq_data, bound_chromatin_data, bound_bed_array
 
 
-def get_random_sample(datapath):
-    loaded_data = load_data(datapath)
-    X, C, labels, bedfile = loaded_data
+def get_random_subset(seq_data, chromatin_data, test_labels, subset_size):
+    """
+    Take as input the test data, and returns the a randomly selected
+    unbound subset.
+    Parameters:
+        seq_data (ndarray): shape: N * 500 (seq_len) * 4
+        chromatin_data (ndarray): shape: N * 10 * no_of_Chrom_Tracks
+        test_labels (ndarray): shape: N * 1
+
+    Returns:
+        a subset of unbound seq_data and unbound chromatin_data
+    """
     # get unbound labels
-    unbound_indices = np.array(labels == 0)
-    X_unbound = X[unbound_indices]
-    C_unbound = C[unbound_indices]
-    # randomly sample from a uniform?
-    high = int(np.sum(np.sum(unbound_indices)))  # choose from the entire set
-    rint = np.random.randint(0, high=high, size=1500)
-    # return & save the randomly selected unbound sets.
-    np.save(datapath + '.unbound.random.seq.npy', X_unbound[rint])
-    np.save(datapath + '.unbound.random.chrom.npy', C_unbound[rint])
-    return X_unbound[rint], C_unbound[rint]
+    unbound_indices = np.array(test_labels == 0)
+    #
+    unbound_seq_data = seq_data[unbound_indices]
+    unbound_chromatin_data = chromatin_data[unbound_indices]
 
-
-def load_bound_data(datapath):
-    # The idea is to load everything without using a generator
-    X = np.load(datapath + ".bound.seq.npy") # already in one hot
-    # Loading the chromatin data
-    C = np.load(datapath + ".bound.chromtracks.npy")
-    # Loading the labels
-    labels = np.load(datapath + ".bound.labels.npy")
-    # Is there anything else I need now? No don't think so. # Cool!
-    return X, C
-
-
-def get_random_sample_shuffled(datapath_to_random_sample):
-    sequence = np.loadtxt(datapath_to_random_sample + ".seq", dtype=str)
-    X = make_onehot(sequence, 500)
-    # Loading the chromatin data
-    C = np.loadtxt(datapath_to_random_sample + ".chromtracks", dtype=float)
-    # Is there anything else I need now? No don't think so. # Cool!
-    return X, C
-
-
-def load_network_probabilities(datapath):
-    chrom_probs = np.loadtxt(datapath + ".bound.chrom.probs")
-    return chrom_probs
+    # randomly sample indexes used to sample
+    upper_lim = int(np.sum(unbound_indices))
+    selected_indices = np.random.randint(0, high=upper_lim, size=subset_size)
+    return unbound_seq_data[selected_indices], \
+           unbound_chromatin_data[selected_indices]
