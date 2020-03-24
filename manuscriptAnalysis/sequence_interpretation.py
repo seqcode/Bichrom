@@ -1,16 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import sys
+
+from joint_embeddings import get_embeddings_low_mem
+
 import matplotlib as mpl
 from matplotlib.text import TextPath
 from matplotlib.patches import PathPatch
 from matplotlib.font_manager import FontProperties
-from joint_embeddings import get_embeddings_low_mem
-from utils import make_onehot
+# from interpretNN.utils import make_onehot
 import itertools
 from collections import defaultdict
 import pandas as pd
 import re
+
 
 
 def convert_to_dictionary(sequence):
@@ -256,7 +260,8 @@ def plot_kmer_scores(file_path, outfile):
     fig, ax = plt.subplots()
     fig.subplots_adjust(left=.15, bottom=.35, right=.95, top=.90)
     # Plot
-    sns.boxplot(dat[:, 0], dat[:, 1].astype(float), showfliers=False, color='Grey')
+    ## CHANGING STUFF MARCH 2020
+    sns.stripplot(dat[:, 0], dat[:, 1].astype(float), color='#cd8d7b')
     plt.xticks(range(len(kmers)), kmers, rotation=45, fontsize=8, ha='right')
     plt.yticks(fontsize=10)
     # Set axes
@@ -278,13 +283,14 @@ def plot_dots(file_path, outfile):
     kmers = dat[:, 0][order]
     fig, ax = plt.subplots()
     fig.subplots_adjust(left=.15, bottom=.25, right=.95, top=.95)
-    plt.plot(range(len(scores)), scores, "o", ms=4)
+    plt.plot(range(len(scores)), scores, "o", ms=4, color='#cd8d7b')
     plt.xticks(range(len(scores)), kmers, rotation=45, fontsize=8, ha='right')
     for axis in ['top', 'bottom', 'left', 'right']:
         ax.spines[axis].set_linewidth(1.5)
     plt.xlabel("8-mers", fontsize=12)
     plt.ylabel("Sequence sub-network activations", fontsize=12)
-    fig.set_size_inches(8, 4)
+    fig.set_size_inches(8, 2.5)
+    sns.despine()
     plt.ylim(-5.5, 3)
     plt.savefig(outfile)
 

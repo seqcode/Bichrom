@@ -2,6 +2,106 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from joint_embeddings import get_embeddings_low_mem
+import pandas as pd
+
+
+def make_heatmap_per_quartile(datapath, out_path):
+    # Label order as in design file
+    labels = ['ATACSEQ', 'H3K27ac', 'H3K27me3', 'H3K4me1', 'H3K4me2', 'H3K4me3',
+              'H3K9ac', 'H3K9me3', 'H3K36me3', 'H2AZ', 'acH2AZ', 'H3', 'H4K20me3']
+    # load & reshape the chromatin data
+    chromatin_data = np.load(datapath + '.bound.chromtracks.npy')
+    chromatin_data = np.reshape(chromatin_data, (-1, 13, 10))
+    summarized_chrom_dat = np.sum(chromatin_data, axis=2)  # sum tags in each window.
+
+    # load and sort the embeddings
+    embedding = np.loadtxt(datapath + '.embedding.txt')
+    msc_score = embedding[:, 1]
+    order = np.argsort(msc_score)
+    summarized_dat_sorted = summarized_chrom_dat[order][::-1]
+
+    # get data quartiles
+    data_len = len(summarized_dat_sorted)
+    quartile_1 = summarized_dat_sorted[:data_len/4]
+    quartile_2 = summarized_dat_sorted[data_len/4: data_len/2]
+    quartile_3 = summarized_dat_sorted[data_len/2: (3*data_len/4)]
+    quartile_4 = summarized_dat_sorted[(3*data_len/4):]
+
+    # process data in each quartile: summing across instances
+    dat = []
+    for q in [quartile_1, quartile_2, quartile_3, quartile_4]:
+        mean_enrichment = np.sum(q, axis=0)/len(q)
+        dat.append(mean_enrichment)
+    dat = np.array(dat)
+
+    # plotting the heatmap
+    fig, ax = plt.subplots()
+    sns.heatmap(dat.transpose(), cmap='copper', yticklabels=labels,
+                linewidths=0.5, linecolor='grey', cbar_kws={"shrink": 0.5})
+    fig.set_size_inches(3, 6)
+    fig.subplots_adjust(left=.30, bottom=.10, right=.90, top=.95)
+    plt.savefig(out_path + '5b.pdf')
+
+
+def plot_compensation(datapath, out_path):
+    # Label order as in design file
+    labels = ['ATACSEQ', 'H3K27ac', 'H3K27me3', 'H3K4me1', 'H3K4me2', 'H3K4me3',
+              'H3K9ac', 'H3K9me3', 'H3K36me3', 'H2AZ', 'acH2AZ', 'H3',
+              'H4K20me3']
+    embedding = np.loadtxt(datapath + '.embedding.txt')
+    mseq_score = embedding[:, 0]
+    mchrom_score = embedding[:, 1]
+
+    annotation = np.loadtxt(datapath + '.bound.chromHMM.annotation', dtype=str)
+    hmm_states_at_ascl1sites = annotation[:, 0]
+
+    state_labels = ['E1', 'E2', 'E3', 'E5', 'E4', 'E6', 'E7', 'E8',
+              'E9', 'E10', 'E11']
+    state_terms = ['CTCF', 'Quiescent', 'Heterochromatin', 'Enhancer',
+                   'Repressed Chromatin', 'Bivalent Promoters',
+                   'Active Promoter', 'Strong Enhancer',
+                   'Transcriptional Transition', 'Transcriptional Elongation',
+                   'Weak/Poised Enhancers']
+
+    data = np.vstack((mseq_score, mchrom_score, hmm_states_at_ascl1sites))
+    data = data.transpose()
+
+    state_labels_idx = [int(x[1:]) for x in state_labels]
+    print state_labels_idx
+
+    seq_mean_values = []
+    chrom_mean_values = []
+    sizes = []
+    for hmm_state in state_labels:
+        seq_subsetted_dat = data[data[:, 2] == hmm_state, 0].astype(float)
+        chrom_subsetted_dat = data[data[:, 2] == hmm_state, 1].astype(float)
+        # Appending means to list
+        seq_mean_values.append(np.median(seq_subsetted_dat))
+        chrom_mean_values.append(np.median(chrom_subsetted_dat))
+        sizes.append(np.shape(seq_subsetted_dat)[0])
+
+    print chrom_mean_values
+    chrom_mean_values = np.array(chrom_mean_values)[np.argsort(state_labels_idx)]
+    seq_mean_values = np.array(seq_mean_values)[np.argsort(state_labels_idx)]
+
+    print state_labels_idx
+    print sizes
+    sizes = [x/10 for x in sizes]
+
+    fig, axs = plt.subplots(1, 2)
+    axs[0].scatter(chrom_mean_values, state_labels_idx, s=sizes, color='#cd8d7b')
+    # axs[0].yticks(range(1, 12), range(1, 12))
+    for y_coordinate in range(1, 12):
+       axs[0].axhline(y=y_coordinate, xmin=0, xmax=1,
+                  ls='--', color='grey', lw=1)
+
+    axs[1].scatter(seq_mean_values, state_labels_idx, s=sizes, color='#084177')
+    # axs[1].yticks(range(1, 12), range(1, 12))
+    for y_coordinate in range(1, 12):
+       axs[1].axhline(y=y_coordinate, xmin=0, xmax=1,
+                  ls='--', color='grey', lw=1)
+
+    plt.savefig(out_path + '5c.pdf')
 
 
 def get_bed_quartiles(datapath, embedding, out_path):
@@ -60,54 +160,60 @@ def sum_heatmap(datapath, input_data, out_path):
 
 def scores_at_domains(model, datapath, out_path):
     # load the entire chromatin data
-    chromatin = np.loadtxt(datapath + '.chromtracks')
-    domains = np.loadtxt(datapath + '.domains')
+    # chromatin = np.loadtxt(datapath + '.chromtracks')
+    # domains = np.loadtxt(datapath + '.domains')
     # Label order is from the chromatin design file
-    labels = ['ATACSEQ', 'H3K27ac', 'H3K27me3', 'H3K4me1', 'H3K4me2', 'H3K4me3',
-              'H3K9ac', 'H3K9me3', 'H3K36me3', 'H2AZ', 'acH2AZ', 'H4K20me3']
-    print chromatin.shape
-    domain_scores = []
-    for idx, label in enumerate(labels):
-        enrichment = domains[:, idx]
-        curr_chrom = chromatin[enrichment == 1]
-        # Take care of the experiments with NO domain calls
-        if len(curr_chrom) == 0:
-            chrom = np.zeros(shape=(1000, 130))
-            seq = np.zeros(shape=(1000, 500, 4))
-            # raise an exception here..
-        else:
-            chrom = curr_chrom
-            seq = np.zeros(shape=(len(curr_chrom), 500, 4))
-        curr_input = (seq, chrom)
-        embeddings = get_embeddings_low_mem(model, curr_input)
-        chrom_scores = embeddings[:, 1]
-        curr = np.vstack((chrom_scores, np.repeat(label, repeats=len(chrom_scores))))
-        curr = np.transpose(curr)
-        domain_scores.append(curr)
+    labels = ['H3K27ac', 'H2AZ', 'acH2AZ', 'H3K4me1', 'ATACSEQ', 'H3K4me2', 'H3K4me3',
+              'H3K9ac', 'H3K36me3', 'H3K27me3', 'H3K9me3', 'H4K20me3']
+    # domain_scores = []
+    # for idx, label in enumerate(labels):
+    #     enrichment = domains[:, idx]
+    #     curr_chrom = chromatin[enrichment == 1]
+    #     # Take care of the experiments with NO domain calls
+    #     if len(curr_chrom) == 0:
+    #         chrom = np.zeros(shape=(1000, 130))
+    #         seq = np.zeros(shape=(1000, 500, 4))
+    #         # raise an exception here..
+    #     else:
+    #         chrom = curr_chrom
+    #         seq = np.zeros(shape=(len(curr_chrom), 500, 4))
+    #     curr_input = (seq, chrom)
+    #     embeddings = get_embeddings_low_mem(model, curr_input)
+    #     chrom_scores = embeddings[:, 1]
+    #     curr = np.vstack((chrom_scores, np.repeat(label, repeats=len(chrom_scores))))
+    #     curr = np.transpose(curr)
+    #     domain_scores.append(curr)
 
-    dat = np.vstack(domain_scores)
+    # dat = np.vstack(domain_scores)
+    # print domain_scores.shape
     # Saving the data here in case I want to use it further:-
-    np.savetxt(out_path + 'Chrom_scores_at_domains.txt', dat, fmt='%s')
+    # np.savetxt(out_path + 'chrom_scores.txt', dat, fmt='%s')
+
     # Figure
-    dat = np.loadtxt(out_path + 'Chrom_scores_at_domains.txt', dtype=str)
-    # Defining figure sizes
-    width = 4
-    height = 3
+    dat = pd.read_csv(out_path + 'chrom_scores.txt', header=None,
+                      sep=" ", names=['value', 'track'])
     # Set style with seaborn
     sns.set_style('ticks')
-    plt.rc('xtick', labelsize=10)
-    plt.rc('ytick', labelsize=10)
+    plt.rc('xtick', labelsize=8)
+    plt.rc('ytick', labelsize=8)
     plt.rc('axes', labelsize=12)
     fig, ax = plt.subplots()
-    fig.subplots_adjust(left=.15, bottom=.25, right=.97, top=.97)
-    sns.boxplot(x=dat[:, 1], y=dat[:, 0].astype(float), color='#99A3A4',
-                linewidth=1, showfliers=False)
-    plt.xticks(range(12), labels, ha='right', rotation=45)
-    plt.ylim(-5, 5)
-    fig.set_size_inches(width, height)
-    for axis in ['top', 'bottom', 'left', 'right']:
-        ax.spines[axis].set_linewidth(1.5)
-    plt.savefig(out_path + 'Figure5A.pdf')
+
+    for idx, label in enumerate(labels):
+        # define a subplot
+        plt.subplot(12, 1, idx+1)
+        # subset data
+        dat_at_label = dat[dat['track'] == label]
+        sns.distplot(dat_at_label['value'], kde=False,
+                     color='#ff1e56')
+        plt.title(label, fontsize=10)
+        plt.xlabel('')
+        if idx < 11:
+            plt.xticks([], [])
+    fig.set_size_inches(4, 7)
+    plt.subplots_adjust(hspace=0.75)
+    fig.subplots_adjust(left=.20, bottom=.05, right=.99, top=.97)
+    plt.savefig(out_path + '5a.pdf')
 
 
 def scores_at_states(model, datapath, out_path):
