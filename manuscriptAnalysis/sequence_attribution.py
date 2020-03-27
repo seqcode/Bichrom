@@ -77,9 +77,9 @@ def get_sequence_attribution(datapath, model, input_data, no_of_chrom_datatracks
     grad_sal = GradientSaliency(model)
     print boundX.shape
     for idx in range(boundX.shape[0]):
+        print idx
         gradients = grad_sal.get_mask(boundX[idx], boundC[idx].reshape(-1, (int(no_of_chrom_datatracks) * 10)))
         grad_star_inp = gradients * boundX[idx]
-
         grad_array.append(gradients)
         grad_star_inp_arr.append(grad_star_inp)
     print len(grad_array)

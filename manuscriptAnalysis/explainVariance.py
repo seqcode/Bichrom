@@ -1,6 +1,7 @@
 import numpy as np
 from subprocess import call
 import sys
+from keras.models import load_model
 
 # sequence
 from joint_embeddings import get_embeddings_low_mem
@@ -13,6 +14,9 @@ from chromatin_interpretation import scores_at_domains
 from chromatin_interpretation import scores_at_states, seq_scores_at_states
 from chromatin_interpretation import make_heatmap_per_quartile
 from chromatin_interpretation import plot_compensation
+
+# hills
+from findhills import find_hills
 
 
 def plot_seq_figures(datapath, model, out_path, no_of_chrom_datasets):
@@ -32,10 +36,17 @@ def plot_seq_figures(datapath, model, out_path, no_of_chrom_datasets):
     chromatin_data = np.load(datapath + '.bound.chromtracks.npy')
     call(['mkdir', out_path])
 
+
     # Currently NOT using this functionality for the main figures.
     # Getting sequence attribution
-    # grad, grad_star_inp = get_sequence_attribution(datapath, model, input_data,
+    # grad, grad_star_inp = get_sequence_attribution(datapath, model, (seq_data, chromatin_data),
     #                                                no_of_chrom_datatracks=no_of_chrom_datasets)
+
+    grad_star_inp = np.load(out_path + 'gradients_star_inp.npy')
+    # this saves a '.hills' file with event locations
+    find_hills(grad_star_inp=grad_star_inp, datapath=datapath, out_path=out_path)
+
+
     # np.save(out_path + "gradients", grad)
     # np.save(out_path + "gradients_star_inp", grad_star_inp)
     # rb_attribution = np.load(out_path + "sequence_attribution.npy")
@@ -57,7 +68,7 @@ def plot_seq_figures(datapath, model, out_path, no_of_chrom_datasets):
     outfile = out_path + '4c.pdf'
     no_of_repeats = 1000
     motif = 'CAGCTG'  # Using the most frequent motif here.
-    plot_multiplicity(model, motif, outfile, no_of_repeats)
+    # plot_multiplicity(model, motif, outfile, no_of_repeats)
 
     # Embed all 10-mers in SIMULATED data; aggregate results over 8-mers
     scores_file = out_path + '10mer.kmer_scores.txt'
@@ -68,7 +79,7 @@ def plot_seq_figures(datapath, model, out_path, no_of_chrom_datasets):
     # for motif in motifs:
     #     second_order_motifs(scores_file, model, motif=motif)
     # print "Plotting scores at kmers + 2bp flanks"
-    plot_kmer_scores(scores_file, outfile)
+    # plot_kmer_scores(scores_file, outfile)
 
     # Embed all 8-mer/10-mer k-mers in a background of Ns
     # Calculate scores for 'CAGSTG kmer + 1bp flanks' in SIMULATED sequences
@@ -78,7 +89,7 @@ def plot_seq_figures(datapath, model, out_path, no_of_chrom_datasets):
     # for motif in motifs:
     #     motifs_in_ns(scores_file, model, motif=motif)
     # print "Plotting scores at kmers + 1bp flanks"
-    plot_dots(scores_file, outfile)
+    # plot_dots(scores_file, outfile)
 
 
 def interpret_chromatin(datapath, model, out_path):
@@ -120,13 +131,15 @@ def main():
     datapath = sys.argv[1]
     model = sys.argv[2]
     outpath = sys.argv[3]
-    no_of_chrom_datasets = 12
+    no_of_chrom_datasets = 13
+
+    model = load_model(model)
 
     # sequence_attribution(args.datapath, model)
-    # plot_seq_figures(datapath=datapath, model=model, out_path=outpath,
-    #                  no_of_chrom_datasets=no_of_chrom_datasets)
+    plot_seq_figures(datapath=datapath, model=model, out_path=outpath,
+                     no_of_chrom_datasets=no_of_chrom_datasets)
 
-    interpret_chromatin(datapath=datapath, model=model, out_path=outpath)
+    # interpret_chromatin(datapath=datapath, model=model, out_path=outpath)
 
 
 if __name__ == "__main__":
