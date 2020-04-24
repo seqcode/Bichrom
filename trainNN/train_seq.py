@@ -90,7 +90,7 @@ def train(model, train_path, val_path, steps_per_epoch, batch_size,
 
     model.compile(loss='binary_crossentropy', optimizer='adam')
     train_generator = data_generator(train_path, batch_size, seqlen=500)
-    val_generator = data_generator(val_path, 500, seqlen=500)
+    val_generator = data_generator(val_path, 200000, seqlen=500)
 
     validation_data = val_generator.next()
     precision_recall_history = PrecisionRecall()
@@ -98,14 +98,14 @@ def train(model, train_path, val_path, steps_per_epoch, batch_size,
     checkpointer = ModelCheckpoint(records_path + 'model_epoch{epoch}.hdf5',
                                    verbose=1, save_best_only=False)
     # defining parameters for early stopping
-    earlystop = EarlyStopping(monitor='val_loss', mode='min', verbose=1,
-                              patience=5)
+    # earlystop = EarlyStopping(monitor='val_loss', mode='min', verbose=1,
+    #                           patience=5)
     # training the model..
-    hist = model.fit_generator(epochs=5, steps_per_epoch=steps_per_epoch,
+    hist = model.fit_generator(epochs=10, steps_per_epoch=steps_per_epoch,
                                generator=train_generator,
                                validation_data=validation_data,
                                callbacks=[precision_recall_history,
-                                          checkpointer, earlystop])
+                                          checkpointer])
 
     loss = save_metrics(hist, precision_recall_history,
                         records_path=records_path)
