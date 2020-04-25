@@ -46,7 +46,8 @@ def build_model(params, seq_length):
         model (keras model): A keras model
     """
     seq_input = Input(shape=(seq_length, 4,), name='seq')
-    xs = Conv1D(params.filter_size, params.n_filters,
+    xs = Conv1D(filters=params.n_filters,
+                kernel_size=params.filter_size,
                 activation='relu')(seq_input)
     xs = BatchNormalization()(xs)
     xs = MaxPooling1D(padding="same", strides=params.pooling_stride,
