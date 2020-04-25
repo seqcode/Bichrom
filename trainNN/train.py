@@ -10,14 +10,14 @@ from scan_genome import evaluate_models
 
 class Params:
     def __init__(self):
-        self.batchsize = 20
+        self.batchsize = 512
         self.dense_layers = 3
-        self.n_filters = 128
+        self.n_filters = 256
         self.filter_size = 24
-        self.pooling_size = 8
-        self.pooling_stride = 8
+        self.pooling_size = 15
+        self.pooling_stride = 15
         self.dropout = 0.5
-        self.dense_layer_size = 128
+        self.dense_layer_size = 512
 
 
 def return_best_model(loss_vec, model_path):

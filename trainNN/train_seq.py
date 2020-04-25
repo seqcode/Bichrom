@@ -3,7 +3,7 @@ import numpy as np
 
 from sklearn.metrics import average_precision_score as auprc
 from keras.models import Model
-from keras.layers import Dense, Dropout, Flatten, Input
+from keras.layers import Dense, Dropout, Flatten, Input, LSTM
 from keras.layers import Conv1D, MaxPooling1D, BatchNormalization
 from keras.callbacks import EarlyStopping
 from keras.callbacks import Callback
@@ -50,7 +50,7 @@ def build_model(params, seq_length):
     xs = BatchNormalization()(xs)
     xs = MaxPooling1D(padding="same", strides=params.pooling_stride,
                       pool_size=params.pooling_size)(xs)
-    xs = Flatten()(xs)
+    xs = LSTM(32)(xs)
     # adding a specified number of dense layers
     for idx in range(params.dense_layers):
         xs = Dense(params.dense_layer_size, activation='relu')(xs)
