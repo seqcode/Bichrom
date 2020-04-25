@@ -8,6 +8,7 @@ from keras.layers import Conv1D, MaxPooling1D, BatchNormalization
 from keras.callbacks import EarlyStopping
 from keras.callbacks import Callback
 from keras.callbacks import ModelCheckpoint
+from keras.optimizers import SGD, Adagrad, Adam
 
 # local imports
 import iterutils as iu
@@ -87,8 +88,8 @@ def train(model, train_path, val_path, steps_per_epoch, batch_size,
     Returns:
         loss (ndarray): An array with the validation loss at each epoch
     """
-
-    model.compile(loss='binary_crossentropy', optimizer='adam')
+    adam = Adam(lr=0.001)
+    model.compile(loss='binary_crossentropy', optimizer=adam)
     train_generator = data_generator(train_path, batch_size, seqlen=500)
     val_generator = data_generator(val_path, 200000, seqlen=500)
 
