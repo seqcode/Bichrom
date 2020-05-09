@@ -20,11 +20,11 @@ class Params:
         self.dense_layer_size = 512
 
 
-def return_best_model(loss_vec, model_path):
+def return_best_model(pr_vec, model_path):
     # return the model with the lowest validation LOSS
-    model_idx = np.argmin(loss_vec)
-    # define the model path
-    model_file = model_path + 'model_epoch' + str(model_idx) + '.hdf5'
+    model_idx = np.argmax(pr_vec)
+    # define the model path (The model files are 1-based)
+    model_file = model_path + 'model_epoch' + str(model_idx + 1) + '.hdf5'
     # load and return the selected model:
     return load_model(model_file)
 
@@ -47,11 +47,11 @@ def run_seq_network(train_path, val_path, records_path):
     curr_params = Params()
 
     # train the network
-    loss = build_and_train_net(curr_params, train_path, val_path,
+    loss, seq_val_pr = build_and_train_net(curr_params, train_path, val_path,
                                batch_size=curr_params.batchsize,
                                records_path=records_path_seq)
     # choose the model with the lowest validation loss
-    model_seq = return_best_model(loss_vec=loss, model_path=records_path_seq)
+    model_seq = return_best_model(pr_vec=seq_val_pr, model_path=records_path_seq)
     return model_seq
 
 
@@ -77,14 +77,14 @@ def run_bimodal_network(train_path, val_path, records_path, no_of_chrom_tracks,
     curr_params = Params()
 
     # train the network
-    loss = transfer_and_train_msc(train_path, val_path, no_of_chrom_tracks,
+    loss, bimodal_val_pr = transfer_and_train_msc(train_path, val_path, no_of_chrom_tracks,
                                   base_seq_model,
                                   batch_size=curr_params.batchsize,
                                   records_path=records_path_sc)
 
     # choose the model with the lowest validation loss
-    loss = np.loadtxt(records_path_sc + 'trainingLoss.txt')
-    model_sc = return_best_model(loss_vec=loss, model_path=records_path_sc)
+    # loss, bimodal_val_pr = np.loadtxt(records_path_sc + 'trainingLoss.txt')
+    model_sc = return_best_model(pr_vec=bimodal_val_pr, model_path=records_path_sc)
     return model_sc
 
 

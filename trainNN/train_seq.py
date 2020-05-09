@@ -71,7 +71,7 @@ def save_metrics(hist_object, pr_history, records_path):
     np.savetxt(records_path + 'trainingLoss.txt', loss, fmt='%1.2f')
     np.savetxt(records_path + 'valLoss.txt', val_loss, fmt='%1.2f')
     np.savetxt(records_path + 'valPRC.txt', val_pr, fmt='%1.2f')
-    return loss
+    return loss, val_pr
 
 
 # NOTE: ADDING A RECORDS PATH HERE!
@@ -109,9 +109,9 @@ def train(model, train_path, val_path, steps_per_epoch, batch_size,
                                callbacks=[precision_recall_history,
                                           checkpointer])
 
-    loss = save_metrics(hist, precision_recall_history,
-                        records_path=records_path)
-    return loss
+    loss, val_pr = save_metrics(hist, precision_recall_history,
+                                records_path=records_path)
+    return loss, val_pr
 
 
 def build_and_train_net(hyperparams, train_path, val_path, batch_size,
@@ -123,7 +123,7 @@ def build_and_train_net(hyperparams, train_path, val_path, batch_size,
     steps = training_set_size/batch_size
     model = build_model(params=hyperparams, seq_length=500)
 
-    loss = train(model, train_path=train_path, val_path=val_path,
-                 steps_per_epoch=steps, batch_size=batch_size,
-                 records_path=records_path)
-    return loss
+    loss, val_pr = train(model, train_path=train_path, val_path=val_path,
+                         steps_per_epoch=steps, batch_size=batch_size,
+                         records_path=records_path)
+    return loss, val_pr

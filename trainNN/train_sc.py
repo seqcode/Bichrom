@@ -80,7 +80,7 @@ def save_metrics(hist_object, pr_history, records_path):
     np.savetxt(records_path + 'trainingLoss.txt', loss, fmt='%1.2f')
     np.savetxt(records_path + 'valLoss.txt', val_loss, fmt='%1.2f')
     np.savetxt(records_path + 'valPRC.txt', val_pr, fmt='%1.2f')
-    return loss
+    return loss, val_pr
 
 
 def transfer(train_path, val_path, basemodel, model, steps_per_epoch,
@@ -123,9 +123,9 @@ def transfer(train_path, val_path, basemodel, model, steps_per_epoch,
                                callbacks=[precision_recall_history,
                                           checkpointer])
 
-    loss = save_metrics(hist_object=hist, pr_history=precision_recall_history,
-                        records_path=records_path)
-    return loss
+    loss, val_pr = save_metrics(hist_object=hist, pr_history=precision_recall_history,
+                                records_path=records_path)
+    return loss, val_pr
 
 
 def transfer_and_train_msc(train_path, val_path, no_of_chrom_tracks, basemodel,
@@ -137,6 +137,6 @@ def transfer_and_train_msc(train_path, val_path, no_of_chrom_tracks, basemodel,
     steps_per_epoch = training_set_size / batch_size
 
     model = add_new_layers(basemodel, chrom_size=no_of_chrom_tracks)
-    loss = transfer(train_path, val_path, basemodel, model, steps_per_epoch,
+    loss, val_pr = transfer(train_path, val_path, basemodel, model, steps_per_epoch,
                     batch_size, records_path)
-    return loss
+    return loss, val_pr
