@@ -141,7 +141,7 @@ def plot_embeddings(out_path, embedding, neg_embedding):
     fig.subplots_adjust(left=.15, bottom=.15, right=.95, top=.95)
     plt.scatter(x=embedding[:, 0], y=embedding[:, 1], c='#D68910',
                 s=3, alpha=0.2)
-    plt.scatter(x=neg_embedding[:, 0], y=neg_embedding[:, 1], s=3, alpha=0.2,
+    plt.scatter(x=neg_embedding[:, 0], y=neg_embedding[:, 1], s=3, alpha=0.3,
                 c='grey')
     # Set figure styles and size
     for axis in ['top', 'bottom', 'left', 'right']:
@@ -183,3 +183,15 @@ def plot_embeddings_bound_only(out_path, embedding, neg_embedding):
     median_seqscore = np.median(embedding[:,0])
     chrom_at_seq_low = embedding[:, 1][embedding[:, 0] <= median_seqscore]
     chrom_at_seq_high = embedding[:, 1][embedding[:, 0] > median_seqscore]
+
+    fig, ax = plt.subplots()
+    for axis in ['top', 'bottom', 'left', 'right']:
+        ax.spines[axis].set_linewidth(1.5)
+    sns.distplot(chrom_at_seq_low, kde=False, bins=25, norm_hist=True,
+                 vertical=True, color='#ed2024',
+                 hist_kws=dict(alpha=0.2, edgecolor="#ed2024", linewidth=0.005))
+    sns.distplot(chrom_at_seq_high, kde=False, bins=25, norm_hist=True,
+                 vertical=True, color='#d69229',
+                 hist_kws=dict(alpha=0.2, edgecolor="#d69229", linewidth=0.005))
+    fig.set_size_inches(4, 6)
+    plt.savefig(out_path + "joint_embeddings_kdes.pdf")

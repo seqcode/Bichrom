@@ -72,18 +72,22 @@ def embed(outdir, model, b_seq_data, b_chromatin_data, ub_seq_data,
         and plots to the specified output directory.
     """
     # Extract and save the embeddings of bound and unbound sets to file.
-    embeddings_bound = get_embeddings(model, b_seq_data, b_chromatin_data)
+    # embeddings_bound = get_embeddings(model, b_seq_data, b_chromatin_data)
     # Extract and save the embeddings of a random negative set
-    embeddings_unbound = get_embeddings_low_mem(model, ub_seq_data,
-                                                ub_chromatin_data)
+    # embeddings_unbound = get_embeddings_low_mem(model, ub_seq_data,
+    #                                             ub_chromatin_data)
 
     # Creating the outfile
-    call(['mkdir', outdir])
+    # call(['mkdir', outdir])
     out_path = outdir + '/embeddings/'
-    call(['mkdir', out_path])
+    # call(['mkdir', out_path])
     # Saving the embeddings to outfile
-    np.savetxt(out_path + "bound_embedding.txt", embeddings_bound)
-    np.savetxt(out_path + 'unbound_embedding.txt', embeddings_unbound)
+    # np.savetxt(out_path + "bound_embedding.txt", embeddings_bound)
+    # np.savetxt(out_path + 'unbound_embedding.txt', embeddings_unbound)
+
+    # Load
+    embeddings_bound = np.loadtxt(out_path + "bound_embedding.txt")
+    embeddings_unbound = np.loadtxt(out_path + "unbound_embedding.txt")
 
     # Plotting
     # Plot 2-D embeddings: Bound + Unbound Sites
@@ -91,8 +95,8 @@ def embed(outdir, model, b_seq_data, b_chromatin_data, ub_seq_data,
     # Plot 2-D embeddings: Bound only
     plot_embeddings_bound_only(out_path, embeddings_bound, embeddings_unbound)
     # Plot marginal 1D distributions:
-    plot_1d_seq(out_path, embeddings_bound, embeddings_unbound)
-    plot_1d_chrom(out_path, embeddings_bound, embeddings_unbound)
+    # plot_1d_seq(out_path, embeddings_bound, embeddings_unbound)
+    # plot_1d_chrom(out_path, embeddings_bound, embeddings_unbound)
 
 
 def main():
@@ -111,11 +115,11 @@ def main():
     model = load_model(args.model)
 
     # load bound & unbound data
-    b_seq_data, b_chromatin_data, ub_seq_data, ub_chromatin_data = get_data(args.datapath)
-    print b_seq_data
-    print b_chromatin_data
-    print ub_seq_data
-    print ub_chromatin_data
+    # b_seq_data, b_chromatin_data, ub_seq_data, ub_chromatin_data = get_data(args.datapath)
+    b_seq_data = 1
+    b_chromatin_data = 1
+    ub_seq_data = 1
+    ub_chromatin_data = 1
     # extract, save and plot 2-D embeddings
     embed(outdir=args.out, model=model, b_chromatin_data=b_chromatin_data,
           b_seq_data=b_seq_data, ub_chromatin_data=ub_chromatin_data,
