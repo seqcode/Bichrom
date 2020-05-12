@@ -110,12 +110,10 @@ def interpret_chromatin(datapath, model, out_path):
 
     # make the output directory
     call(['mkdir', out_path])
-
-    # make_heatmap_per_quartile(datapath, out_path=out_path)
+    make_heatmap_per_quartile(datapath, out_path=out_path)
     plot_compensation(datapath, out_path=out_path)
-
     # calculating scores at chromatin input track domains..
-    # scores_at_domains(model, datapath, out_path)
+    scores_at_domains(model, datapath, out_path)
     # sum_heatmap(datapath, input_data, out_path)
     # calculating chromatin scores at chromHMM states"
     # order = scores_at_states(model, datapath, out_path)
@@ -136,7 +134,7 @@ def main():
     plot_seq_figures(datapath=datapath, model=model, out_path=outpath,
                      no_of_chrom_datasets=no_of_chrom_datasets)
 
-    # interpret_chromatin(datapath=datapath, model=model, out_path=outpath)
+    interpret_chromatin(datapath=datapath, model=model, out_path=outpath)
 
 
 if __name__ == "__main__":
