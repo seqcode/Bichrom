@@ -56,8 +56,7 @@ def plot_seq_figures(datapath, model, out_path, no_of_chrom_datasets):
     # canonical motifs
     motifs = ['CAGCTG', 'CACCTG', 'CAGGTG']
     # Plot correlations between # of motifs and scores.
-    plot_correlation(datapath, embedding, (seq_data, chromatin_data),
-                     outfile_a, outfile_b, motifs)
+    plot_correlation(embedding, seq_data, outfile_a, outfile_b, motifs)
 
     # Get the number of k-mer matches at SP and CP sites
     get_multiplicity_at_categories(seq_data, chromatin_data, motifs, model, out_path)

@@ -83,12 +83,11 @@ def get_multiplicity_at_categories(seq_input, chromatin_input, motifs,
     calc_no_of_motifs(onehot_high)
 
 
-def plot_correlation(datapath, embedding, seq_input, out_a, out_b, motifs):
+def plot_correlation(embedding, seq_input, out_a, out_b, motifs):
     """
     Plot correlation between the number of motifs/k-mers and sequence network
     scores
 
-    :param datapath: path + prefix to input Ascl1 data
     :param embedding: the latent network embedding
     :param seq_input: seq_input
     :param out_a: outpath for figure A
