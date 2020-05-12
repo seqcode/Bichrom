@@ -48,7 +48,7 @@ def get_data(datapath):
     # i can change the subset size here, or define that separately.
     ub_seq_data, ub_chromatin_data = get_random_subset(seq_data=seq_data,
                                                        chromatin_data=chromatin_data,
-                                                       test_labels=labels, subset_size=10000)
+                                                       test_labels=labels, subset_size=20000)
     return b_seq_data, b_chromatin_data, ub_seq_data, ub_chromatin_data
 
 
@@ -112,6 +112,10 @@ def main():
 
     # load bound & unbound data
     b_seq_data, b_chromatin_data, ub_seq_data, ub_chromatin_data = get_data(args.datapath)
+    print b_seq_data
+    print b_chromatin_data
+    print ub_seq_data
+    print ub_chromatin_data
     # extract, save and plot 2-D embeddings
     embed(outdir=args.out, model=model, b_chromatin_data=b_chromatin_data,
           b_seq_data=b_seq_data, ub_chromatin_data=ub_chromatin_data,

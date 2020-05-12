@@ -139,8 +139,10 @@ def plot_embeddings(out_path, embedding, neg_embedding):
     sns.set_style('ticks')
     fig, ax = plt.subplots()
     fig.subplots_adjust(left=.15, bottom=.15, right=.95, top=.95)
-    plt.scatter(x=embedding[:, 0], y=embedding[:, 1], s=8, c='#D68910')
-    plt.scatter(x=neg_embedding[:, 0], y=neg_embedding[:, 1], s=8, c='grey')
+    plt.scatter(x=embedding[:, 0], y=embedding[:, 1], c='#D68910',
+                s=3, alpha=0.2)
+    plt.scatter(x=neg_embedding[:, 0], y=neg_embedding[:, 1], s=3, alpha=0.2,
+                c='grey')
     # Set figure styles and size
     for axis in ['top', 'bottom', 'left', 'right']:
         ax.spines[axis].set_linewidth(1.5)
@@ -149,7 +151,7 @@ def plot_embeddings(out_path, embedding, neg_embedding):
     plt.xlabel('Sequence sub-network activations', fontsize=14)
     plt.ylabel('Chromatin sub-network activations', fontsize=14)
     fig.set_size_inches(6, 6)
-    plt.savefig(out_path + "Joint_embedding.pdf")
+    plt.savefig(out_path + "Joint_embedding.png", dpi=960)
 
 
 def plot_embeddings_bound_only(out_path, embedding, neg_embedding):

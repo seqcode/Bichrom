@@ -20,7 +20,8 @@ def load_data(datapath):
     seq = np.array(seq).reshape(-1,)
     seq_dat_onehot = make_onehot(seq, 500)
     # prior chromatin
-    chrom_dat = pd.read_csv(datapath + ".chromtracks", header=None, sep=None)
+    chrom_dat = pd.read_csv(datapath + ".chromtracks", header=None,
+                            delim_whitespace=True)
     # labels
     labels = pd.read_csv(datapath + '.labels', header=None)
     labels = np.array(labels).reshape(-1,)
