@@ -9,7 +9,7 @@ try:
     from keras.layers import Conv1D, MaxPooling1D, BatchNormalization
     from keras.optimizers import SGD, Adam
     from keras.callbacks import EarlyStopping
-    import trainNN.iterutils_mm as  mm
+    import trainNN.iterutils_mm as mm
     import trainNN.iterutils as iu
     from keras.callbacks import Callback
     from keras.callbacks import ModelCheckpoint

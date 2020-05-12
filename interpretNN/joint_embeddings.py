@@ -178,3 +178,8 @@ def plot_embeddings_bound_only(out_path, embedding, neg_embedding):
     plt.ylabel('Chromatin sub-network activations', fontsize=14)
     fig.set_size_inches(6, 6)
     plt.savefig(out_path + "Joint_embedding_bound_only.pdf")
+
+    # plot histogram: split embeddings into seq-low and seq-high & plot.
+    median_seqscore = np.median(embedding[:,0])
+    chrom_at_seq_low = embedding[:, 1][embedding[:, 0] <= median_seqscore]
+    chrom_at_seq_high = embedding[:, 1][embedding[:, 0] > median_seqscore]

@@ -16,6 +16,12 @@ import pandas as pd
 import re
 
 
+def make_onehot(buf, seq_length):
+    fd = {'A': [1, 0, 0, 0], 'T': [0, 1, 0, 0], 'G': [0, 0, 1, 0], 'C': [0, 0, 0, 1], 'N': [0, 0, 0, 0]}
+    onehot = [fd[base] for seq in buf for base in seq]
+    onehot_np = np.reshape(onehot, (-1, seq_length, 4))
+    return onehot_np
+
 
 def convert_to_dictionary(sequence):
     # Define a dictionary mapping the one-hot encoding back to letters
@@ -27,12 +33,73 @@ def convert_to_dictionary(sequence):
     return l
 
 
-def plot_correlation(datapath, embedding, input_data, out_a, out_b, motifs):
-    X, C = input_data
+def get_multiplicity_at_categories(seq_input, chromatin_input, motifs,
+                                   model, outfile):
+    """
+    Divide sites into those with sequence scores less than and gt than the
+    median sequence sub-network score.
+
+    Save these sites,and calculates/prints the average occurence
+    of the E-box k-mers.
+
+    :param seq_input: seq_input
+    :param chromatin_input: chromatin_input
+    :param motifs: the set of k-mers to be scanned
+    :param model: the trained model
+    :param outfile: the prefix to the output path
+    :return: None
+    """
+
+    # Get the bound embeddings:
+    bound_embeddings = get_embeddings_low_mem(model, seq_input, chromatin_input)
+
+    # get the median sequence score
+    seq_scores = bound_embeddings[:, 0]
+    median_bound_seqscore = np.median(seq_scores)
+
+    # get the onehot vectors for the sequences in "low" and "high" categories
+    onehot_high = seq_input[seq_scores > median_bound_seqscore]
+    onehot_low = seq_input[seq_scores <= median_bound_seqscore]
+    # convert the one-hot vectors to strings and save to files
+    seq_low = [''.join(convert_to_dictionary(x)) for x in onehot_low]
+    seq_high = [''.join(convert_to_dictionary(x)) for x in onehot_high]
+    np.savetxt(outfile + 'seq_lessthan_median.txt', seq_low, fmt='%s')
+    np.savetxt(outfile + 'seq_gtthan_median.txt', seq_high, fmt='%s')
+
+    # calculate the average number of motifs in each sample
+
+    def calc_no_of_motifs(sequence_set):
+        no_of_motifs = []
+        for vector in sequence_set:
+            seq = convert_to_dictionary(vector)
+            seq = ''.join(seq)
+            match = []
+            for motif in motifs:
+                match.append(len(re.findall(motif, seq)))
+            no_of_motifs.append(np.sum(match))
+        print np.mean(no_of_motifs)
+
+    calc_no_of_motifs(onehot_low)
+    calc_no_of_motifs(onehot_high)
+
+
+def plot_correlation(datapath, embedding, seq_input, out_a, out_b, motifs):
+    """
+    Plot correlation between the number of motifs/k-mers and sequence network
+    scores
+
+    :param datapath: path + prefix to input Ascl1 data
+    :param embedding: the latent network embedding
+    :param seq_input: seq_input
+    :param out_a: outpath for figure A
+    :param out_b: outpath for figure B
+    :param motifs: set of motifs
+    :return: None
+    """
+
     num_of_motifs = []
-    for vector in X:
-        seq = convert_to_dictionary(vector)
-        seq = ''.join(seq)
+    for vector in seq_input:
+        seq = ''.join(convert_to_dictionary(vector))
         match = []
         for motif in motifs:
             match.append(len(re.findall(motif, seq)))
@@ -55,6 +122,7 @@ def plot_correlation(datapath, embedding, input_data, out_a, out_b, motifs):
     fig.set_size_inches(3.5, 4)
     sns.despine()
     plt.savefig(out_a)
+
     # Figure 2: Do boxplots correlating this with sequence sub-network scores:
     sequence_score = embedding[:, 0]
     fig, ax = plt.subplots()
@@ -113,7 +181,8 @@ def second_order_motifs(file_path, model, motif):
         sequence_onehot = make_onehot(simulated_sequence, 500)
         # Create a simulated input vector
         simulated_input = (sequence_onehot, simulated_chromatin)
-        scores = get_embeddings_low_mem(model, simulated_input)
+        scores = get_embeddings_low_mem(model, sequence_onehot,
+                                        simulated_chromatin)
         sequence_score = scores[0][0]
         score_list.append(sequence_score)
         if reverse_complement(kmer) in kmer_dict:
@@ -301,6 +370,7 @@ def plot_multiplicity(model, motif, outfile, no_of_repeats):
     C = np.zeros(shape=(1, 130))
     data = np.zeros(shape=(no_of_repeats, 6))
     for seq_id, sequence in enumerate(sequences):
+        print seq_id
         # Iterate over the 10000 sequences.
         idx = 0
         locations = np.random.randint(5, 495, 1)  # Putting it in a single location for now
@@ -311,18 +381,17 @@ def plot_multiplicity(model, motif, outfile, no_of_repeats):
             # Check the baseline score of the generated sequence
             sequence_onehot = make_onehot(sequence, 500)
             # 1. Check score with no motif
-            data[seq_id, idx] = get_embeddings_low_mem(model, (sequence_onehot, C))[0][0]
+            data[seq_id, idx] = get_embeddings_low_mem(model, sequence_onehot, C)[0][0]
             idx = idx + 1
             sequence[loc - 3:loc + 3] = list(motif)
             sequence = list(sequence)
             sequence_onehot = make_onehot(sequence, 500)
-            data[seq_id, idx] = get_embeddings_low_mem(model, (sequence_onehot, C))[0][0]
+            data[seq_id, idx] = get_embeddings_low_mem(model, sequence_onehot, C)[0][0]
             idx = idx + 1
             while True:
                 if idx == 6:
                     break
                 else:
-                    print idx
                     # Add motifs and append to lists
                     offset = np.random.randint(5, 500) # Add atleast 5
                     # to the left edge of the motif
@@ -331,7 +400,7 @@ def plot_multiplicity(model, motif, outfile, no_of_repeats):
                         sequence[curr-3: curr+3] = list(motif)
                         sequence = list(sequence)
                         sequence_onehot = make_onehot(sequence, 500)
-                        data[seq_id, idx] = get_embeddings_low_mem(model, (sequence_onehot, C))[0][0]
+                        data[seq_id, idx] = get_embeddings_low_mem(model, sequence_onehot, C)[0][0]
                         idx += 1
                     else:
                         pass

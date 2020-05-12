@@ -46,7 +46,7 @@ def get_activations_low_mem(model, input_data):
     w = np.reshape(w, (2,))
     abs_w = w/abs(w)
     print abs_w[0]
-    return w * activations_rs  # Not returning the embeddings here.
+    return abs_w * activations_rs  # Not returning the embeddings here.
 
 
 def split_embeddings_by_domains(embeddings, domains, protein):

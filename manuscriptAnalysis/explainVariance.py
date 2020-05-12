@@ -6,7 +6,7 @@ from keras.models import load_model
 # sequence
 from joint_embeddings import get_embeddings_low_mem
 from sequence_interpretation import plot_multiplicity, plot_kmer_scores, plot_correlation, plot_dots
-from sequence_interpretation import motifs_in_ns, second_order_motifs
+from sequence_interpretation import motifs_in_ns, second_order_motifs, get_multiplicity_at_categories
 from sequence_attribution import get_sequence_attribution
 
 # chromatin
@@ -36,55 +36,53 @@ def plot_seq_figures(datapath, model, out_path, no_of_chrom_datasets):
     chromatin_data = np.load(datapath + '.bound.chromtracks.npy')
     call(['mkdir', out_path])
 
-
-    # Currently NOT using this functionality for the main figures.
+    # Attribution
     # Getting sequence attribution
     # grad, grad_star_inp = get_sequence_attribution(datapath, model, (seq_data, chromatin_data),
     #                                                no_of_chrom_datatracks=no_of_chrom_datasets)
-
-    grad_star_inp = np.load(out_path + 'gradients_star_inp.npy')
+    # grad_star_inp = np.load(out_path + 'gradients_star_inp.npy')
     # this saves a '.hills' file with event locations
-    find_hills(grad_star_inp=grad_star_inp, datapath=datapath, out_path=out_path)
-
-
+    # find_hills(grad_star_inp=grad_star_inp, datapath=datapath, out_path=out_path)
     # np.save(out_path + "gradients", grad)
     # np.save(out_path + "gradients_star_inp", grad_star_inp)
     # rb_attribution = np.load(out_path + "sequence_attribution.npy")
     # visualize(datapath, out_path, input_data, rb_attribution)
 
     # Plot frequencies of 'CAGSTG' k-mers
-    # embedding = get_embeddings_low_mem(model, seq_input=seq_data,
-    #                                    chrom_input=chromatin_data)
-
+    embedding = get_embeddings_low_mem(model, seq_input=seq_data,
+                                       chrom_input=chromatin_data)
     outfile_a = out_path + '4a.pdf'
     outfile_b = out_path + '4b.pdf'
-    # canonical motifs (?) ## CHECK THIS?
+    # canonical motifs
     motifs = ['CAGCTG', 'CACCTG', 'CAGGTG']
     # Plot correlations between # of motifs and scores.
-    # plot_correlation(datapath, embedding, (seq_data, chromatin_data),
-    #                  outfile_a, outfile_b, motifs)
+    plot_correlation(datapath, embedding, (seq_data, chromatin_data),
+                     outfile_a, outfile_b, motifs)
+
+    # Get the number of k-mer matches at SP and CP sites
+    get_multiplicity_at_categories(seq_data, chromatin_data, motifs, model, out_path)
 
     # Plot correlations between # of SIMULATED motifs and scores.
     outfile = out_path + '4c.pdf'
     no_of_repeats = 1000
     motif = 'CAGCTG'  # Using the most frequent motif here.
-    # plot_multiplicity(model, motif, outfile, no_of_repeats)
+    plot_multiplicity(model, motif, outfile, no_of_repeats)
 
     # Embed all 10-mers in SIMULATED data; aggregate results over 8-mers
     scores_file = out_path + '10mer.kmer_scores.txt'
     outfile = out_path + '4d.pdf'
     # Removing any pre-existing 'scores_file', function uses file appending.
-    # call(['rm', scores_file])
-    # motifs = ['CAGCTG', 'CACCTG']
-    # for motif in motifs:
-    #     second_order_motifs(scores_file, model, motif=motif)
-    # print "Plotting scores at kmers + 2bp flanks"
-    # plot_kmer_scores(scores_file, outfile)
+    call(['rm', scores_file])
+    motifs = ['CAGCTG', 'CACCTG']
+    for motif in motifs:
+        second_order_motifs(scores_file, model, motif=motif)
+    print "Plotting scores at kmers + 2bp flanks"
+    plot_kmer_scores(scores_file, outfile)
 
     # Embed all 8-mer/10-mer k-mers in a background of Ns
     # Calculate scores for 'CAGSTG kmer + 1bp flanks' in SIMULATED sequences
-    scores_file = out_path + '8mer.Ns.kmer_scores.txt'
-    outfile = out_path + '4e.pdf'
+    # scores_file = out_path + '8mer.Ns.kmer_scores.txt'
+    # outfile = out_path + '4e.pdf'
     # call(['rm', outfile])
     # for motif in motifs:
     #     motifs_in_ns(scores_file, model, motif=motif)
