@@ -8,17 +8,17 @@ cd trainNN
 To view help: 
 python train.py --help
 
-Required arguments: 
-    'train_path': Directory + prefix for the training data 
-                  The training data contains three files: prefix + '.seq', prefix + '.chromtracks', prefix + '.labels'
-                  These three file types are discussed in detail in the section Input Data
-                  
-    'val_path'  : Directory + prefix for the validation data. 
-    'test_path' : Directory + prefix for the validation data.
-    'no_of_chrom_tracks' : The number of chromatin experiments used (Note: this does not include replicates; 
-                           for each experiment; eg. ATAC-seq, the replicates must be merged prior to Bichrom application, 
-                           more detains in the section Input Data). 
-    'out' : An output directory where Bichrom results will be stored. 
+Required arguments:  
+  
+train_path': Directory + prefix for the training data  
+             The training data contains three files: prefix + '.seq', prefix + '.chromtracks', prefix + '.labels'  
+             These three file types are discussed in detail in the section Input Data  
+'val_path'  : Directory + prefix for the validation data.  
+'test_path' : Directory + prefix for the validation data.  
+'no_of_chrom_tracks' : The number of chromatin experiments used (Note: this does not include replicates; 
+                       for each experiment; eg. ATAC-seq, the replicates must be merged prior to Bichrom application, 
+                       more detains in the section Input Data).   
+'out' : An output directory where Bichrom results will be stored.   
 
 ### Input Datasets
 The model requires three files for training:
