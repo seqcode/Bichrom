@@ -1,15 +1,7 @@
-### iTF: Predicting induced TF binding given DNA sequence and preexisting chromatin data
-A bimodal neural network architecture to model induced in vivo TF binding based on TF's sequence preferences and the preexisting chromatin landscape.
+### Bichrom: A bimodal neural network to predict TF binding using sequence and pre-existing chromatin track data
 
-### Citation
-Srivastava, Divyanshi, et al. "Characterizing the sequence and prior chromatin determinants of induced TF binding with bimodal neural networks." BioRxiv (2019): 672790.
-
-### Requirements
-1. Python2.7
-   + All python dependencies can be installed with: pip install -r requirements.txt
-2. Keras (Recommended version >= 2.02)
-3. Tensorflow (Recommended verion >= v1.8)
-4. Seaborn(0.9.0) for plotting (https://seaborn.pydata.org/installing.html)
+#### bioRxiv
+Srivastava, D., Aydin, B., Mazzoni, E.O. and Mahony, S., 2020. An interpretable bimodal neural network characterizes the sequence and preexisting chromatin predictors of induced TF binding. bioRxiv, p.672790.
 
 ### Input Datasets
 The model requires three files for training:
