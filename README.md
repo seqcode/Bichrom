@@ -6,7 +6,7 @@ Here, we investigate the sequence and preexisting chromatin predictors of TF-DNA
 ### bioRxiv ID
 Srivastava, D., Aydin, B., Mazzoni, E.O. and Mahony, S., 2020. An interpretable bimodal neural network characterizes the sequence and preexisting chromatin predictors of induced TF binding. bioRxiv, p.672790.
 
-### About the iTF software
+#### About the iTF software
 iTF trains and evaluates 2 classifiers: 
 * **Bichrom<sub>SEQ</sub>**: A sequence-only baseline classifier, Bichrom<sub>SEQ</sub> uses DNA sequence as features to predict induced TF binding. BichromSEQ additionally uses strategies to minimize the learning of sequence-related accessibility features by the sequence-only network. 
 
@@ -17,10 +17,12 @@ iTF trains and evaluates 2 classifiers:
 **iTF output**: iTF outputs the validation and test metrics (auROC and auPRC) for both a sequence-only network (Bichrom<sub>SEQ</sub>) and a complete sequence + preexisting chromatin bimodal network (Bichrom). It additionally plots the test Precision Recall curves for both models; as well as test recall at a false positive rate=0.01. 
 
 
-### Download and train Bichrom
+#### Download and train Bichrom
+```
 cd trainNN  
 To view help:   
-python train.py --help  
+python train.py --help
+```
   
 **Required arguments**:  
   
@@ -30,7 +32,7 @@ These file types are discussed in detail in the section on input data.
 **val_path**  : Directory + prefix for the validation data.  
 **test_path** : Directory + prefix for the validation data.  
 **no_of_chrom_tracks** : The number of chromatin experiments used.  
-(Note: this does not include replicates; for each experiment; eg. ATAC-seq, the replicates must be merged prior to Bichrom application, more detains in the section Input Data).   
+(Note: this does not include replicates; for each experiment; eg. ATAC-seq, the replicates must be merged prior to Bichrom application, more details in the section Input Data).   
 **out** : An output directory where Bichrom results will be stored.   
 
 
