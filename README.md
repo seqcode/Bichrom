@@ -30,7 +30,7 @@ iTF trains and evaluates two models:
 * A sequence based classifier for TF binding prediction (Bichrom<sub>SEQ</sub>)
 * A sequence + pre-existing chromatin based classifier for TF binding prediction (Bichrom)
 
-**Input**  
+**Inputs:**  
 
 Required arguments: 
 * training_schema_yaml: This is a YAML file containing containing paths to the training data (sequence, preexisting chromatin and labels), validation data and test data. A sample YAML file can be found in trainNN/sample.yaml. The structure of the training_schema_yaml file should be as follows:  
@@ -50,11 +50,24 @@ test:
   chromatin_tracks: ['/path/to/val/atacseq.txt', ..., '/path/to/test/h3k27ac.txt'] 
 </pre>
 
-
 * outdir: This is the output directory, where all Bichrom output files will be placed. 
 
-**Output**
-iTF outputs the validation and test metrics (auROC and auPRC) for both a sequence-only network (Bichrom<sub>SEQ</sub>) and a complete sequence + preexisting chromatin bimodal network (Bichrom). It additionally plots the test Precision Recall curves for both models; as well as test recall at a false positive rate=0.01. 
+**Input file formats:**
+
+The training, validation and test files are provided to Bichrom using the argument **training_schema_yaml**. Required file formats for the seq, label and chromatin_tracks are:  
+
+* **seq**: The seq file contains one sequence per line. Note: all sequences need to be repeat-masked, i.e. only upper-case nucleotides should be passed. For example, if your training set has 25,100 sequences, the seq file will contain 25,100 lines.  
+
+* **labels**: The labels file contains a binary 1/0 label for each associated sequence.  
+
+* **chromatin_tracks**: Multiple chromatin files can be passed to to the program through the YAML file. (The YAML field chromatin_tracks accepts a list of file locations.) Each line in a chromatin track file contains tab separated binned chromatin data. The data can be binned at any resolution. For example, if the seq file contains 500 base pair long sequences: 
+  * If bins=50 base pairs, then each line in the chromatin file will contain 10 (500/50) values. 
+  * If bins=1 base pair, then each line in the chromatin file will contain 500 values. Note that all chromatin feature files that are passed to this argument must be binned at the same resolution.  
+
+
+**Outputs:**  
+
+iTF outputs the validation and test metrics (auROC and auPRC) for both a sequence-only network (Bichrom<sub>SEQ</sub>) and a sequence + preexisting chromatin bimodal network (Bichrom). It additionally plots the test Precision Recall curves for both models; as well as test recall at a false positive rate=0.01. 
    
 
 
