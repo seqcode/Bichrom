@@ -6,17 +6,6 @@ Here, we investigate the sequence and preexisting chromatin predictors of TF-DNA
 ## Citation
 Srivastava, D., Aydin, B., Mazzoni, E.O. and Mahony, S., 2020. An interpretable bimodal neural network characterizes the sequence and preexisting chromatin predictors of induced TF binding. bioRxiv, p.672790.
 
-## About
-iTF trains and evaluates 2 classifiers: 
-* **Bichrom<sub>SEQ</sub>**: A sequence-only baseline classifier, Bichrom<sub>SEQ</sub> uses DNA sequence as features to predict induced TF binding. BichromSEQ additionally uses strategies to minimize the learning of sequence-related accessibility features by the sequence-only network. 
-
-* **Bichrom**: A bimodal sequence and preexisting chromatin classifier, Bichrom intergrates the bichrom<sub>SEQ</sub> and Bichrom<sub>CHR</sub> (a chromatin CNN) sub-networks to predict induced TF binding. Bichrom<sub>SEQ</sub> and Bichrom<sub>CHR</sub> sub-networks are combined using a single sigmoid-activated dense node. 
-  
-**iTF requirements**: Both Bichrom<sub>SEQ</sub> and Bichrom require train, test and validation datasets. Input data formats are described in more detail below. 
-
-
-
-
 ## Installation
 **Requirements**:  
 
@@ -41,11 +30,26 @@ iTF trains and evaluates two models:
 * A sequence based classifier for TF binding prediction (Bichrom<sub>SEQ</sub>)
 * A sequence + pre-existing chromatin based classifier for TF binding prediction (Bichrom)
 
-**Input**
-Required arguments: 
-* training_schema_yaml: This is a YAML file containing containing paths to the training data (sequence, preexisting chromatin and labels), validation data and test data.  
+**Input**  
 
-A sample YAML file can be found in trainNN/sample.yaml
+Required arguments: 
+* training_schema_yaml: This is a YAML file containing containing paths to the training data (sequence, preexisting chromatin and labels), validation data and test data. A sample YAML file can be found in trainNN/sample.yaml. The structure of the training_schema_yaml file should be as follows:  
+
+<pre>
+train:  
+  seq: '/path/to/train/seq.txt'    
+  labels: '/path/to/train/labels.txt'  
+  chromatin_tracks: ['/path/to/train/atacseq.txt', ..., '/path/to/train/h3k27ac.txt']  
+val: 
+  seq: '/path/to/val/seq.txt'  
+  labels: '/path/to/val/labels.txt'  
+  chromatin_tracks: ['/path/to/val/atacseq.txt', ..., '/path/to/val/h3k27ac.txt'] 
+test: 
+  seq: '/path/to/test/seq.txt'  
+  labels: '/path/to/test/labels.txt'  
+  chromatin_tracks: ['/path/to/val/atacseq.txt', ..., '/path/to/test/h3k27ac.txt'] 
+</pre>
+
 
 * outdir: This is the output directory, where all Bichrom output files will be placed. 
 
