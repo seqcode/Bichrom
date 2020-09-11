@@ -1,26 +1,36 @@
 from __future__ import division
 import numpy as np
+import pandas as pd
 
 from sklearn.metrics import average_precision_score as auprc
-from keras.models import Model
-from keras.layers import Dense, concatenate, Input, LSTM
-from keras.layers import Conv1D, Reshape, Lambda
-from keras.optimizers import SGD
-import keras.backend as K
-import iterutils as iu
-from keras.callbacks import Callback
-from keras.callbacks import ModelCheckpoint
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, concatenate, Input, LSTM
+from tensorflow.keras.layers import Conv1D, Reshape, Lambda
+from tensorflow.keras.optimizers import SGD
+import tensorflow.keras.backend as K
+from tensorflow.keras.callbacks import Callback
+from tensorflow.keras.callbacks import ModelCheckpoint
+
+from iterutils import train_generator
 
 
-def data_generator(filename, batchsize, seqlen):
-    X = iu.train_generator(filename + '.seq', batchsize,
-                           seqlen, 'seq', 'repeat')
-    C = iu.train_generator(filename + '.chromtracks', batchsize,
-                           seqlen, 'chrom', 'repeat')
-    y = iu.train_generator(filename + '.labels', batchsize,
-                           seqlen, 'labels', 'repeat')
+def data_generator(path, batchsize, seqlen):
+    dat_seq = train_generator(path['seq'], batchsize, seqlen, 'seq', 'repeat')
+    dat_chromatin = []
+    for chromatin_track in path['chromatin_tracks']:
+        dat_chromatin.append(
+            train_generator(chromatin_track, batchsize, seqlen, 'chrom', 'repeat'))
+    y = train_generator(path['labels'], batchsize, seqlen, 'labels', 'repeat')
     while True:
-        yield [X.next(), C.next()], y.next()
+        combined_chrom_data = []
+        for chromatin_track_generators in dat_chromatin:
+            x = next(chromatin_track_generators)
+            combined_chrom_data.append(pd.DataFrame(x))
+        chromatin_features = pd.concat(combined_chrom_data, axis=1).values
+        print(chromatin_features.shape)
+        sequence_features = next(dat_seq)
+        labels = next(y)
+        yield [sequence_features, chromatin_features], labels
 
 
 def add_new_layers(base_model, chrom_size):
@@ -60,13 +70,17 @@ def add_new_layers(base_model, chrom_size):
 
 
 class PrecisionRecall(Callback):
+
+    def __init__(self, val_data):
+        super().__init__()
+        self.validation_data = val_data
+
     def on_train_begin(self, logs=None):
         self.val_auprc = []
         self.train_auprc = []
 
     def on_epoch_end(self, epoch, logs=None):
-        x_val, c_val, y_val = self.validation_data[0], self.validation_data[1],\
-                              self.validation_data[2]
+        (x_val, c_val), y_val = self.validation_data
         predictions = self.model.predict([x_val, c_val])
         aupr = auprc(y_val, predictions)
         self.val_auprc.append(aupr)
@@ -112,12 +126,12 @@ def transfer(train_path, val_path, basemodel, model, steps_per_epoch,
     # Get train and validation data
     train_data_generator = data_generator(train_path, batchsize, seqlen=500)
     val_data_generator = data_generator(val_path, 200000, seqlen=500)
-    validation_data = val_data_generator.next()
-    precision_recall_history = PrecisionRecall()
+    validation_data = next(val_data_generator)
+    precision_recall_history = PrecisionRecall(validation_data)
     checkpointer = ModelCheckpoint(records_path + 'model_epoch{epoch}.hdf5',
                                    verbose=1, save_best_only=False)
 
-    hist = model.fit_generator(epochs=10, steps_per_epoch=steps_per_epoch,
+    hist = model.fit_generator(epochs=1, steps_per_epoch=steps_per_epoch,
                                generator=train_data_generator,
                                validation_data=validation_data,
                                callbacks=[precision_recall_history,
@@ -132,7 +146,7 @@ def transfer_and_train_msc(train_path, val_path, no_of_chrom_tracks, basemodel,
                            batch_size, records_path):
 
     # Calculate size of the training set:
-    training_set_size = len(np.loadtxt(train_path + '.labels'))
+    training_set_size = len(np.loadtxt(train_path['labels']))
     # Calculate the steps per epoch
     steps_per_epoch = training_set_size / batch_size
 

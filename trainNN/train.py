@@ -1,7 +1,8 @@
 import argparse
 import numpy as np
+import yaml
 from subprocess import call
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 
 from train_seq import build_and_train_net
 from train_sc import transfer_and_train_msc
@@ -89,36 +90,50 @@ def run_bimodal_network(train_path, val_path, records_path, no_of_chrom_tracks,
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Train M-SEQ and M-SC')
-    parser.add_argument('train_path', help='Path for training data')
-    parser.add_argument('val_path', help='Path for validation data')
-    parser.add_argument('test_path', help='Path for test data')
-    parser.add_argument('no_of_chrom_tracks',
-                        help='Number of prior chromatin experiments.')
-    parser.add_argument('out', help='Output directory')
+    # parser = argparse.ArgumentParser(description='Train and compare BichromSEQ and Bichrom')
+    # parser.add_argument('train_path', help='Path for training data')
+    # parser.add_argument('val_path', help='Path for validation data')
+    # parser.add_argument('test_path', help='Path for test data')
+    # parser.add_argument('no_of_chrom_tracks',
+    #                     help='Number of prior chromatin experiments.')
+    # parser.add_argument('out', help='Output directory')
+    # args = parser.parse_args()
+    parser = argparse.ArgumentParser(
+        description='Train and compare BichromSEQ and Bichrom')
+    parser.add_argument('training_schema_yaml', metavar='YML',
+                        help='YAML file with paths to train, test and val data')
+    parser.add_argument('outdir', help='Output directory')
 
     args = parser.parse_args()
+
+    with open(args.training_schema_yaml, 'r') as f:
+        try:
+            data_paths = yaml.safe_load(f)
+        except yaml.YAMLError as exc:
+            print(exc)
+
     # Create output directory:
-    outdir = args.out
+    outdir = args.outdir
     call(['mkdir', outdir])
 
     # Train the sequence-only network (M-SEQ)
-    mseq = run_seq_network(train_path=args.train_path, val_path=args.val_path,
+    mseq = run_seq_network(train_path=data_paths['train'], val_path=data_paths['val'],
                            records_path=outdir)
 
+    no_of_chromatin_tracks = len(data_paths['train']['chromatin_tracks'])
     # Train the bimodal network (M-SC)
-    msc = run_bimodal_network(train_path=args.train_path,
-                              val_path=args.val_path, records_path=outdir,
-                              no_of_chrom_tracks=int(args.no_of_chrom_tracks),
+    msc = run_bimodal_network(train_path=data_paths['train'],
+                              val_path=data_paths['val'], records_path=outdir,
+                              no_of_chrom_tracks=no_of_chromatin_tracks,
                               base_seq_model=mseq)
 
     # Evaluate both models on held-out test sets and plot metrics
-    probas_out_seq = outdir + '/mseq/' + 'testProbs.txt'
-    probas_out_sc = outdir + '/msc/' + 'testProbs.txt'
+    probas_out_seq = outdir + '/mseq/' + 'test_probs.txt'
+    probas_out_sc = outdir + '/msc/' + 'test_probs.txt'
     records_file_path = outdir + '/metrics'
-    print records_file_path
+    print(records_file_path)
 
-    evaluate_models(sequence_len=500, filename=args.test_path,
+    evaluate_models(sequence_len=500, path=data_paths['test'],
                     probas_out_seq=probas_out_seq, probas_out_sc=probas_out_sc,
                     model_seq=mseq, model_sc=msc,
                     records_file_path=records_file_path)

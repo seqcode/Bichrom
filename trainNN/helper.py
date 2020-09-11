@@ -1,5 +1,3 @@
-from __future__ import division
-
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import beta
@@ -22,7 +20,7 @@ def identify_proba_thresh(proba_vector, labels, fpr_thresh):
     # probability threshold:
     fpr_proba_thresh = thresholds[arg]  # TEST THIS FURTHER
     tpr_at_fixed_fpr = tpr[arg]
-    print tpr_at_fixed_fpr
+    print(tpr_at_fixed_fpr)
 
     # Calculate the total number of bound sites:
     no_of_bound_sites = int(np.sum(labels))

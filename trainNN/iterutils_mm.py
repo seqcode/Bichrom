@@ -2,7 +2,6 @@
 """ Helper module with methods for one-hot sequence encoding and generators to
 to enable whole genome iteration """
 
-from __future__ import division
 import numpy as np
 
 

@@ -1,23 +1,33 @@
 from __future__ import division
 import numpy as np
+import pandas as pd
 import sklearn.metrics
 from sklearn.metrics import precision_recall_curve
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from helper import plot_distributions
 
 # user defined module
-import iterutils as iu
+from iterutils import train_generator
+from helper import plot_distributions
 
 
-def merge_generators(filename, batchsize, seqlen, mode):
-    X = iu.train_generator(filename + ".seq", batchsize,
-                           seqlen, "seq", mode)
-    A = iu.train_generator(filename + ".chromtracks", batchsize,
-                           seqlen, "accessibility", mode)
-    y = iu.train_generator(filename + ".labels", batchsize,
-                           seqlen, "labels", mode)
+def merge_generators(path, batchsize, seqlen, mode):
+    dat_seq = train_generator(path['seq'], batchsize, seqlen, 'seq', mode)
+    dat_chromatin = []
+    for chromatin_track in path['chromatin_tracks']:
+        dat_chromatin.append(
+            train_generator(chromatin_track, batchsize, seqlen, 'chrom', mode))
+    y = train_generator(path['labels'], batchsize, seqlen, 'labels', mode)
     while True:
-        yield [X.next(), A.next()], y.next()
+        combined_chrom_data = []
+        for chromatin_track_generators in dat_chromatin:
+            x = next(chromatin_track_generators)
+            combined_chrom_data.append(pd.DataFrame(x))
+        chromatin_features = pd.concat(combined_chrom_data, axis=1).values
+        sequence_features = next(dat_seq)
+        labels = next(y)
+        yield [sequence_features, chromatin_features], labels
 
 
 def test_on_batch(batch_generator, model, outfile, mode):
@@ -35,7 +45,7 @@ def test_on_batch(batch_generator, model, outfile, mode):
     counter = 0
     while True:
         try:
-            [X_test, acc_test], y = batch_generator.next()
+            [X_test, acc_test], y = next(batch_generator)
             if mode == 'seq_only':
                 batch_probas = model.predict_on_batch([X_test])
             else:
@@ -74,7 +84,7 @@ def get_metrics(test_labels, test_probas, records_file, model_name):
     records_file.write("AUC PRC:{0}\n".format(prc_auc))
 
 
-def get_probabilities(filename, seq_len, model, outfile, mode):
+def get_probabilities(path, seq_len, model, outfile, mode):
     """
     Get network-assigned probabilities
     Parameters:
@@ -85,13 +95,13 @@ def get_probabilities(filename, seq_len, model, outfile, mode):
          true labels (ndarray): True test-set labels
     """
     # Inputing a range of default values here, can be changed later.
-    data_generator = merge_generators(filename=filename, batchsize=1000,
+    data_generator = merge_generators(path=path, batchsize=1000,
                                       seqlen=seq_len, mode='nr')
     # Load the keras model
     # model = load_model(model_file)
     test_on_batch(data_generator, model, outfile, mode)
     probas = np.loadtxt(outfile)
-    true_labels = np.loadtxt(filename + '.labels')
+    true_labels = np.loadtxt(path['labels'])
     return true_labels, probas
 
 
@@ -110,7 +120,7 @@ def combine_pr_curves(records_file, m_seq_probas, m_sc_probas, labels):
     plt.savefig(records_file + '.pr_curves.pdf')
 
 
-def evaluate_models(sequence_len, filename, probas_out_seq, probas_out_sc,
+def evaluate_models(sequence_len, path, probas_out_seq, probas_out_sc,
                     model_seq, model_sc, records_file_path):
 
     # Define the file that contains testing metrics
@@ -118,13 +128,13 @@ def evaluate_models(sequence_len, filename, probas_out_seq, probas_out_sc,
 
     # Get the probabilities for both M-SEQ and M-SC models:
     # Note: Labels are the same for M-SC and M-SEQ
-    true_labels, probas_seq = get_probabilities(filename=filename,
+    true_labels, probas_seq = get_probabilities(path=path,
                                                 seq_len=sequence_len,
                                                 model=model_seq,
                                                 outfile=probas_out_seq,
                                                 mode='seq_only')
 
-    _, probas_sc = get_probabilities(filename=filename, seq_len=sequence_len,
+    _, probas_sc = get_probabilities(path=path, seq_len=sequence_len,
                                      model=model_sc, outfile=probas_out_sc,
                                      mode='sc')
 
