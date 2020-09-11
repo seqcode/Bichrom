@@ -14,7 +14,7 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 from iterutils import train_generator
 
 
-def data_generator(path, batchsize, seqlen):
+def data_generator(path, batchsize, seqlen, bin_size):
     dat_seq = train_generator(path['seq'], batchsize, seqlen, 'seq', 'repeat')
     dat_chromatin = []
     for chromatin_track in path['chromatin_tracks']:
@@ -24,8 +24,11 @@ def data_generator(path, batchsize, seqlen):
     while True:
         combined_chrom_data = []
         for chromatin_track_generators in dat_chromatin:
-            x = next(chromatin_track_generators)
-            combined_chrom_data.append(pd.DataFrame(x))
+            curr_chromatin_mark = next(chromatin_track_generators)
+            mark_resolution = curr_chromatin_mark.shape
+            assert (mark_resolution == (batchsize, seqlen/bin_size)),\
+                "Please check binning, specified bin size=50"
+            combined_chrom_data.append(pd.DataFrame(curr_chromatin_mark))
         chromatin_features = pd.concat(combined_chrom_data, axis=1).values
         print(chromatin_features.shape)
         sequence_features = next(dat_seq)
@@ -33,7 +36,7 @@ def data_generator(path, batchsize, seqlen):
         yield [sequence_features, chromatin_features], labels
 
 
-def add_new_layers(base_model, chrom_size):
+def add_new_layers(base_model, seq_len, no_of_chromatin_tracks, bin_size):
     """
     Takes a pre-existing M-SEQ (Definition in README) & adds structure to \
     use it as part of a bimodal DNA sequence + prior chromatin network
@@ -53,8 +56,9 @@ def add_new_layers(base_model, chrom_size):
     xs = Dense(1, name='MSEQ-dense-new', activation='tanh')(curr_tensor)
 
     # Defining a M-C sub-network
-    chrom_input = Input(shape=(chrom_size * 10,), name='chrom_input')
-    ci = Reshape((chrom_size, 10), input_shape=(chrom_size * 10,))(chrom_input)
+    chrom_input = Input(shape=(no_of_chromatin_tracks * (seq_len/bin_size),), name='chrom_input')
+    ci = Reshape((no_of_chromatin_tracks, (seq_len/bin_size)),
+                 input_shape=(no_of_chromatin_tracks * (seq_len/bin_size),))(chrom_input)
     # Permuting the input dimensions to match Keras input requirements:
     permute_func = Lambda(permute)
     ci = permute_func(ci)
@@ -98,7 +102,7 @@ def save_metrics(hist_object, pr_history, records_path):
 
 
 def transfer(train_path, val_path, basemodel, model, steps_per_epoch,
-             batchsize, records_path):
+             batchsize, records_path, bin_size, seq_len):
     """
     Trains the M-SC, transferring weights from the pre-trained M-SEQ.
     The M-SEQ weights are kept fixed except for the final layer.
@@ -124,8 +128,8 @@ def transfer(train_path, val_path, basemodel, model, steps_per_epoch,
     model.compile(loss='binary_crossentropy', optimizer=sgd)
 
     # Get train and validation data
-    train_data_generator = data_generator(train_path, batchsize, seqlen=500)
-    val_data_generator = data_generator(val_path, 200000, seqlen=500)
+    train_data_generator = data_generator(train_path, batchsize, seqlen=seq_len, bin_size=bin_size)
+    val_data_generator = data_generator(val_path, 200000, seqlen=seq_len, bin_size=bin_size)
     validation_data = next(val_data_generator)
     precision_recall_history = PrecisionRecall(validation_data)
     checkpointer = ModelCheckpoint(records_path + 'model_epoch{epoch}.hdf5',
@@ -142,15 +146,16 @@ def transfer(train_path, val_path, basemodel, model, steps_per_epoch,
     return loss, val_pr
 
 
-def transfer_and_train_msc(train_path, val_path, no_of_chrom_tracks, basemodel,
-                           batch_size, records_path):
+def transfer_and_train_msc(train_path, val_path, basemodel,
+                           batch_size, records_path, bin_size, seq_len):
 
     # Calculate size of the training set:
     training_set_size = len(np.loadtxt(train_path['labels']))
     # Calculate the steps per epoch
     steps_per_epoch = training_set_size / batch_size
-
-    model = add_new_layers(basemodel, chrom_size=no_of_chrom_tracks)
+    # Calculate number of chromatin tracks
+    no_of_chrom_tracks = len(train_path['chromatin_tracks'])
+    model = add_new_layers(basemodel, seq_len, no_of_chrom_tracks, bin_size)
     loss, val_pr = transfer(train_path, val_path, basemodel, model, steps_per_epoch,
-                    batch_size, records_path)
+                    batch_size, records_path, bin_size, seq_len)
     return loss, val_pr

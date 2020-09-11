@@ -30,7 +30,7 @@ def return_best_model(pr_vec, model_path):
     return load_model(model_file)
 
 
-def run_seq_network(train_path, val_path, records_path):
+def run_seq_network(train_path, val_path, records_path, seq_len):
     """
     Train M-SEQ. (Model Definition in README)
     Parameters:
@@ -49,15 +49,16 @@ def run_seq_network(train_path, val_path, records_path):
 
     # train the network
     loss, seq_val_pr = build_and_train_net(curr_params, train_path, val_path,
-                               batch_size=curr_params.batchsize,
-                               records_path=records_path_seq)
+                                           batch_size=curr_params.batchsize,
+                                           records_path=records_path_seq,
+                                           seq_len=seq_len)
     # choose the model with the lowest validation loss
     model_seq = return_best_model(pr_vec=seq_val_pr, model_path=records_path_seq)
     return model_seq
 
 
-def run_bimodal_network(train_path, val_path, records_path, no_of_chrom_tracks,
-                        base_seq_model):
+def run_bimodal_network(train_path, val_path, records_path, base_seq_model,
+                        bin_size, seq_len):
     """
     Train M-SC. (Model Definition in README)
     Parameters:
@@ -78,10 +79,12 @@ def run_bimodal_network(train_path, val_path, records_path, no_of_chrom_tracks,
     curr_params = Params()
 
     # train the network
-    loss, bimodal_val_pr = transfer_and_train_msc(train_path, val_path, no_of_chrom_tracks,
-                                  base_seq_model,
-                                  batch_size=curr_params.batchsize,
-                                  records_path=records_path_sc)
+    loss, bimodal_val_pr = transfer_and_train_msc(train_path, val_path,
+                                                  base_seq_model,
+                                                  batch_size=curr_params.batchsize,
+                                                  records_path=records_path_sc,
+                                                  bin_size=bin_size,
+                                                  seq_len=seq_len)
 
     # choose the model with the lowest validation loss
     # loss, bimodal_val_pr = np.loadtxt(records_path_sc + 'trainingLoss.txt')
@@ -89,17 +92,16 @@ def run_bimodal_network(train_path, val_path, records_path, no_of_chrom_tracks,
     return model_sc
 
 
-def train_bichrom(data_paths, outdir):
+def train_bichrom(data_paths, outdir, seq_len, bin_size):
     # Train the sequence-only network (M-SEQ)
     mseq = run_seq_network(train_path=data_paths['train'], val_path=data_paths['val'],
-                           records_path=outdir)
+                           records_path=outdir, seq_len=seq_len)
 
     no_of_chromatin_tracks = len(data_paths['train']['chromatin_tracks'])
     # Train the bimodal network (M-SC)
     msc = run_bimodal_network(train_path=data_paths['train'],
                               val_path=data_paths['val'], records_path=outdir,
-                              no_of_chrom_tracks=no_of_chromatin_tracks,
-                              base_seq_model=mseq)
+                              base_seq_model=mseq, bin_size=bin_size, seq_len=seq_len)
 
     # Evaluate both models on held-out test sets and plot metrics
     probas_out_seq = outdir + '/mseq/' + 'test_probs.txt'
@@ -107,7 +109,7 @@ def train_bichrom(data_paths, outdir):
     records_file_path = outdir + '/metrics'
     print(records_file_path)
 
-    evaluate_models(sequence_len=500, path=data_paths['test'],
+    evaluate_models(sequence_len=seq_len, path=data_paths['test'],
                     probas_out_seq=probas_out_seq, probas_out_sc=probas_out_sc,
                     model_seq=mseq, model_sc=msc,
                     records_file_path=records_file_path)

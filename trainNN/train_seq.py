@@ -116,13 +116,13 @@ def train(model, train_path, val_path, steps_per_epoch, batch_size,
 
 
 def build_and_train_net(hyperparams, train_path, val_path, batch_size,
-                        records_path):
+                        records_path, seq_len):
 
     # Calculate size of training set
     training_set_size = len(np.loadtxt(train_path['labels']))
     # Calculate the steps per epoch
     steps = training_set_size/batch_size
-    model = build_model(params=hyperparams, seq_length=500)
+    model = build_model(params=hyperparams, seq_length=seq_len)
 
     loss, val_pr = train(model, train_path=train_path, val_path=val_path,
                          steps_per_epoch=steps, batch_size=batch_size,
