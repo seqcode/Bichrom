@@ -21,9 +21,22 @@ Alternatively, to install requirements using pip:
 cd trainNN  
 To view help:   
 python train.py --help
+usage: run_bichrom.py [-h] training_schema_yaml window_size bin_size outdir
+
+Train and compare BichromSEQ and Bichrom
+
+positional arguments:
+  training_schema_yaml  YAML file with paths to train, test and val data
+  window_size           Size of genomic windows
+  bin_size              Size of bins for chromatin data
+  outdir                Output directory
+
+optional arguments:
+  -h, --help            show this help message and exit
+
 ```
   
-## Input files & usage:  
+## Input Files: Description  
 iTF trains and evaluates two models: 
 * A sequence based classifier for TF binding prediction (Bichrom<sub>SEQ</sub>)
 * A sequence + pre-existing chromatin based classifier for TF binding prediction (Bichrom)
