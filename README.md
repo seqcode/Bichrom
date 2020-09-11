@@ -1,79 +1,73 @@
-### iTF: Predicting induced TF binding given DNA sequence and preexisting chromatin data
-A bimodal neural network architecture to model induced in vivo TF binding based on TF's sequence preferences and the preexisting chromatin landscape.
+## Bichrom: A bimodal neural network to predict TF binding using sequence and pre-existing chromatin track data
+Transcription factor (TF) binding specificity is determined via a complex interplay between the TF’s DNA binding preference and cell type-specific chromatin environments. The chromatin features that correlate with TF binding in a given cell type have been well characterized. For instance, the binding sites for a majority of TFs display concurrent chromatin accessibility. However, concurrent chromatin features reflect the binding activities of the TF itself, and thus provide limited insight into how genome-wide TF-DNA binding patterns became established in the first place. To understand the determinants of TF binding specificity, we therefore need to examine how newly activated TFs interact with sequence and preexisting chromatin landscapes.
 
-### Citation
-Srivastava, Divyanshi, et al. "Characterizing the sequence and prior chromatin determinants of induced TF binding with bimodal neural networks." BioRxiv (2019): 672790.
+Here, we investigate the sequence and preexisting chromatin predictors of TF-DNA binding by examining the genome-wide occupancy of TFs that have been induced in well-characterized chromatin environments. We develop Bichrom, a bimodal neural network that jointly models sequence and preexisting chromatin data to interpret the genome-wide binding patterns of induced TFs. We find that the preexisting chromatin landscape is a differential global predictor of TF-DNA binding; incorporating preexisting chromatin features improves our ability to explain the binding specificity of some TFs substantially, but not others. Furthermore, by analyzing site-level predictors, we show that TF binding in previously inaccessible chromatin tends to correspond to the presence of more favorable cognate DNA sequences. Bichrom thus provides a framework for modeling, interpreting, and visualizing the joint sequence and chromatin landscapes that determine TF-DNA binding dynamics.
 
-### Requirements
-1. Python2.7
-   + All python dependencies can be installed with: pip install -r requirements.txt
-2. Keras (Recommended version >= 2.02)
-3. Tensorflow (Recommended verion >= v1.8)
-4. Seaborn(0.9.0) for plotting (https://seaborn.pydata.org/installing.html)
+## Citation
+Srivastava, D., Aydin, B., Mazzoni, E.O. and Mahony, S., 2020. An interpretable bimodal neural network characterizes the sequence and preexisting chromatin predictors of induced TF binding. bioRxiv, p.672790.
 
-### Input Datasets
-The model requires three files for training:
-1. Training labels (1 training instance per line) (Format: FILENAME.label)
-   - **Description**: Each line in this file will be either 0 or 1.  
-2. DNA sequence at training windows (Format: FILENAME.seq)
-   - **Description**: Each line should contain the DNA sequence for one window. 
-3. Tab delimited tag counts for each input chromatin chromatin data track at training windows.  
-(Format: FILENAME.chromtracks)
-   - **Description**: Tag counts for each chromatin data track are appended. For example, if we have tag counts over 10 binned windows and 12 chromatin tracks, each line in FILENAME.chromtracks will contain 10 * 12 columns.  
+## Installation
+**Requirements**:  
 
-### Usage: Training networks to predict TF binding 
-#### Step 1: Run the sequence-only network
-To view help:
-cd trainNN
-python sequence_network.py -h
+python >= 3.5  
+
+To install python dependencies:
+`pip install -r requirements.txt`
+
+Alternatively, use anaconda to create a virtual environment using the provided YAML configuration file:
+`conda create -f bichrom.yml`
+
+## Usage
+```
+# Clone and navigate to the iTF repository. 
+cd trainNN  
+To view help:   
+python train.py --help
+```
+  
+## Input files & usage:  
+iTF trains and evaluates two models: 
+* A sequence based classifier for TF binding prediction (Bichrom<sub>SEQ</sub>)
+* A sequence + pre-existing chromatin based classifier for TF binding prediction (Bichrom)
+
+**Inputs:**  
 
 Required arguments: 
-- datapath: Prefix to the datafiles (For example: datapath=FILENAME, if the training files are FILENAME.seq, FILENAME.chromtracks and FILENAME.labels)  
-- datapath_val: Prefix to the validation files  
-- outfile: Outfile, file to print validation metrics  
+* training_schema_yaml: This is a YAML file containing containing paths to the training data (sequence, preexisting chromatin and labels), validation data and test data. A sample YAML file can be found in trainNN/sample.yaml. The structure of the training_schema_yaml file should be as follows:  
+
+<pre>
+train:  
+  seq: '/path/to/train/seq.txt'    
+  labels: '/path/to/train/labels.txt'  
+  chromatin_tracks: ['/path/to/train/atacseq.txt', ..., '/path/to/train/h3k27ac.txt']  
+val: 
+  seq: '/path/to/val/seq.txt'  
+  labels: '/path/to/val/labels.txt'  
+  chromatin_tracks: ['/path/to/val/atacseq.txt', ..., '/path/to/val/h3k27ac.txt'] 
+test: 
+  seq: '/path/to/test/seq.txt'  
+  labels: '/path/to/test/labels.txt'  
+  chromatin_tracks: ['/path/to/val/atacseq.txt', ..., '/path/to/test/h3k27ac.txt'] 
+</pre>
+
+* outdir: This is the output directory, where all Bichrom output files will be placed. 
+
+**Input file formats:**
+
+The training, validation and test files are provided to Bichrom using the argument **training_schema_yaml**. Required file formats for the seq, label and chromatin_tracks are:  
+
+* **seq**: The seq file contains one sequence per line. Note: all sequences need to be repeat-masked, i.e. only upper-case nucleotides should be passed. For example, if your training set has 25,100 sequences, the seq file will contain 25,100 lines.  
+
+* **labels**: The labels file contains a binary 1/0 label for each associated sequence.  
+
+* **chromatin_tracks**: Multiple chromatin files can be passed to to the program through the YAML file. (The YAML field chromatin_tracks accepts a list of file locations.) Each line in a chromatin track file contains tab separated binned chromatin data. The data can be binned at any resolution. For example, if the seq file contains 500 base pair long sequences: 
+  * If bins=50 base pairs, then each line in the chromatin file will contain 10 (500/50) values. 
+  * If bins=1 base pair, then each line in the chromatin file will contain 500 values. Note that all chromatin feature files that are passed to this argument must be binned at the same resolution.  
 
 
-Optional arguments
-- --batchsize (default=512)  
-- --seqlen (length of input training sequences, default=500) 
-- --chromsize (The number of input chromatin datasets used as features, default=12)
+**Outputs:**  
 
-For example: 
-python sequence_network.py --batchsize 400 training_files validation_files outfile
+iTF outputs the validation and test metrics (auROC and auPRC) for both a sequence-only network (Bichrom<sub>SEQ</sub>) and a sequence + preexisting chromatin bimodal network (Bichrom). It additionally plots the test Precision Recall curves for both models; as well as test recall at a false positive rate=0.01. 
+   
 
-#### Step 2: Run the sequence and chromatin bimodal network  
-To view help:  
-cd trainNN  
-python bimodal_network.py -h
 
-Required (positional) arguments: 
-- datapath: Prefix to the datafiles (For example: datapath=FILENAME, if the training files are FILENAME.seq, FILENAME.chromtracks and FILENAME.labels)  
-- datapath_val: Prefix to the validation files  
-- outfile: Outfile, file to print validation metrics  
-- basemodel: The trained sequence model from Step 1.
-
-Optional arguments
-- --batchsize (default=400)  
-- --seqlen (length of input training sequences, default=500) 
-- --chromsize (The number of input chromatin datasets used as features, default=12)
-
-For example: 
-python bimodal_network.py --batchsize 400 training_files validation_files outfile basemodel 
-
-### Usage: Interpreting networks that predict TF binding
-Interpret the sequence and chromatin contributions at individual loci, as well as the sequence and chromatin drivers of induced TF binding
-To view help:  
-cd interpretNN  
-python interpretNN.py  
-
-Required (positional) arguments:  
-- model: A trained model to be interpreted
-- datapath: Prefix to the datafiles
-
-Optional arguments:   
-- --joint: Extract the joint sequence and chromatin sub-network embeddings
-- --sequence: Interpret the sequence features driving network variation
-
-The required input datasets contain FILENAME.seq, FILENAME.chromtracks, FILENAME.labels and FILENAME.bed  
-For example:  
-python interpretNN.py --joint MODEL FILENAME
