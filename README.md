@@ -48,6 +48,8 @@ test:
   chromatin_tracks: ['/path/to/val/atacseq.txt', ..., '/path/to/test/h3k27ac.txt'] 
 </pre>
 
+* window_size: The size of genomic windows used for training, validation and testing. (For example: 500)
+* bin_size: Binning applied to the chromatin data. (For example, if window_size=500 and bin_size=10, each line in a chromatin_track file will contain 500/10=50 tab separated values)
 * outdir: This is the output directory, where all Bichrom output files will be placed. 
 
 **Input file formats:**
@@ -59,7 +61,7 @@ The training, validation and test files are provided to Bichrom using the argume
 * **labels**: The labels file contains a binary label that has been assigned each training window. (1 or 0)  
 
 * **chromatin_tracks**: Multiple chromatin files can be passed to to the program through the YAML file. (The YAML field chromatin_tracks accepts a list of file locations.) Each line in a chromatin track file contains tab separated binned chromatin data. The data can be binned at any resolution. For example, if the genomic windows used for train, test and validation are 500 base pair long, then: 
-  * If bins=50 base pairs, then each line in the chromatin file will contain 10 (500/50) values. 
+  * If bins=50 base pairs, then each line in the chromatin file will contain 10 (500/50) tab separated values. 
   * If bins=1 base pair, then each line in the chromatin file will contain 500 values. Note that all chromatin feature files that are passed to this argument must be binned at the same resolution.  
 
 
