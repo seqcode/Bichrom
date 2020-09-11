@@ -10,12 +10,10 @@ Srivastava, D., Aydin, B., Mazzoni, E.O. and Mahony, S., 2020. An interpretable 
 **Requirements**:  
 
 python >= 3.5  
-
-To install python dependencies:
+We suggest using anaconda to create a virtual environment using the provided YAML configuration file:
+`conda env create -f bichrom.yml`  
+Alternatively, to install requirements using pip: 
 `pip install -r requirements.txt`
-
-Alternatively, use anaconda to create a virtual environment using the provided YAML configuration file:
-`conda create -f bichrom.yml`
 
 ## Usage
 ```
@@ -54,13 +52,13 @@ test:
 
 **Input file formats:**
 
-The training, validation and test files are provided to Bichrom using the argument **training_schema_yaml**. Required file formats for the seq, label and chromatin_tracks are:  
+The training, validation and test files are provided to Bichrom using the argument **training_schema_yaml**. Each data set: train, test and validation, corresponds to 500 base pair windows on the genome. The "seq", "labels" and "chromatin_tracks" files for the train, test and validation sets contain features associated with these 500 base pair windows. 
 
-* **seq**: The seq file contains one sequence per line. Note: all sequences need to be repeat-masked, i.e. only upper-case nucleotides should be passed. For example, if your training set has 25,100 sequences, the seq file will contain 25,100 lines.  
+* **seq**: The seq file contains one sequence per line. For example, if your training set has 25,100 genomic windows, the seq file will contain 25,100 lines.  
 
-* **labels**: The labels file contains a binary 1/0 label for each associated sequence.  
+* **labels**: The labels file contains a binary label that has been assigned each training window. (1 or 0)  
 
-* **chromatin_tracks**: Multiple chromatin files can be passed to to the program through the YAML file. (The YAML field chromatin_tracks accepts a list of file locations.) Each line in a chromatin track file contains tab separated binned chromatin data. The data can be binned at any resolution. For example, if the seq file contains 500 base pair long sequences: 
+* **chromatin_tracks**: Multiple chromatin files can be passed to to the program through the YAML file. (The YAML field chromatin_tracks accepts a list of file locations.) Each line in a chromatin track file contains tab separated binned chromatin data. The data can be binned at any resolution. For example, if the genomic windows used for train, test and validation are 500 base pair long, then: 
   * If bins=50 base pairs, then each line in the chromatin file will contain 10 (500/50) values. 
   * If bins=1 base pair, then each line in the chromatin file will contain 500 values. Note that all chromatin feature files that are passed to this argument must be binned at the same resolution.  
 
