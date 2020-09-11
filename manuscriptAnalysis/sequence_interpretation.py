@@ -55,14 +55,19 @@ def get_multiplicity_at_categories(seq_input, chromatin_input, motifs,
 
     # get the median sequence score
     seq_scores = bound_embeddings[:, 0]
+    print(seq_scores.shape)
     median_bound_seqscore = np.median(seq_scores)
+    print median_bound_seqscore
+
 
     # get the onehot vectors for the sequences in "low" and "high" categories
     onehot_high = seq_input[seq_scores > median_bound_seqscore]
     onehot_low = seq_input[seq_scores <= median_bound_seqscore]
+
     # convert the one-hot vectors to strings and save to files
     seq_low = [''.join(convert_to_dictionary(x)) for x in onehot_low]
     seq_high = [''.join(convert_to_dictionary(x)) for x in onehot_high]
+
     np.savetxt(outfile + 'seq_lessthan_median.txt', seq_low, fmt='%s')
     np.savetxt(outfile + 'seq_gtthan_median.txt', seq_high, fmt='%s')
 

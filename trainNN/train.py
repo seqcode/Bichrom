@@ -89,33 +89,7 @@ def run_bimodal_network(train_path, val_path, records_path, no_of_chrom_tracks,
     return model_sc
 
 
-def main():
-    # parser = argparse.ArgumentParser(description='Train and compare BichromSEQ and Bichrom')
-    # parser.add_argument('train_path', help='Path for training data')
-    # parser.add_argument('val_path', help='Path for validation data')
-    # parser.add_argument('test_path', help='Path for test data')
-    # parser.add_argument('no_of_chrom_tracks',
-    #                     help='Number of prior chromatin experiments.')
-    # parser.add_argument('out', help='Output directory')
-    # args = parser.parse_args()
-    parser = argparse.ArgumentParser(
-        description='Train and compare BichromSEQ and Bichrom')
-    parser.add_argument('training_schema_yaml', metavar='YML',
-                        help='YAML file with paths to train, test and val data')
-    parser.add_argument('outdir', help='Output directory')
-
-    args = parser.parse_args()
-
-    with open(args.training_schema_yaml, 'r') as f:
-        try:
-            data_paths = yaml.safe_load(f)
-        except yaml.YAMLError as exc:
-            print(exc)
-
-    # Create output directory:
-    outdir = args.outdir
-    call(['mkdir', outdir])
-
+def train_bichrom(data_paths, outdir):
     # Train the sequence-only network (M-SEQ)
     mseq = run_seq_network(train_path=data_paths['train'], val_path=data_paths['val'],
                            records_path=outdir)
@@ -137,10 +111,4 @@ def main():
                     probas_out_seq=probas_out_seq, probas_out_sc=probas_out_sc,
                     model_seq=mseq, model_sc=msc,
                     records_file_path=records_file_path)
-
-
-if __name__ == "__main__":
-    main()
-
-
 

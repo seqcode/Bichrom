@@ -11,7 +11,6 @@ from sequence_attribution import get_sequence_attribution
 
 # chromatin
 from chromatin_interpretation import scores_at_domains
-from chromatin_interpretation import scores_at_states, seq_scores_at_states
 from chromatin_interpretation import make_heatmap_per_quartile
 from chromatin_interpretation import plot_compensation
 
@@ -60,6 +59,8 @@ def plot_seq_figures(datapath, model, out_path, no_of_chrom_datasets):
 
     # Get the number of k-mer matches at SP and CP sites
     get_multiplicity_at_categories(seq_data, chromatin_data, motifs, model, out_path)
+
+    exit(1)
 
     # Plot correlations between # of SIMULATED motifs and scores.
     outfile = out_path + '4c.pdf'
@@ -111,9 +112,9 @@ def interpret_chromatin(datapath, model, out_path):
     # make the output directory
     call(['mkdir', out_path])
     make_heatmap_per_quartile(datapath, out_path=out_path)
-    plot_compensation(datapath, out_path=out_path)
+    # plot_compensation(datapath, out_path=out_path)
     # calculating scores at chromatin input track domains..
-    scores_at_domains(model, datapath, out_path)
+    # scores_at_domains(model, datapath, out_path)
     # sum_heatmap(datapath, input_data, out_path)
     # calculating chromatin scores at chromHMM states"
     # order = scores_at_states(model, datapath, out_path)
@@ -131,8 +132,8 @@ def main():
     model = load_model(model)
 
     # sequence_attribution(args.datapath, model)
-    plot_seq_figures(datapath=datapath, model=model, out_path=outpath,
-                     no_of_chrom_datasets=no_of_chrom_datasets)
+    # plot_seq_figures(datapath=datapath, model=model, out_path=outpath,
+    #                  no_of_chrom_datasets=no_of_chrom_datasets)
 
     interpret_chromatin(datapath=datapath, model=model, out_path=outpath)
 

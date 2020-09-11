@@ -17,9 +17,10 @@ def make_heatmap_per_quartile(datapath, out_path):
     :return: None
     """
     # Label order as in design file
-    hm_labels = ['ATACSEQ', 'H3K27ac', 'H3K27me3', 'H3K4me1', 'H3K4me2',
-                 'H3K4me3', 'H3K9ac', 'H3K9me3', 'H3K36me3', 'H2AZ', 'acH2AZ',
-                 'H3', 'H4K20me3']
+    hm_labels = ['ATACSEQ: 0', 'H3K27ac: 1', 'H3K27me3: 2', 'H3K4me1: 3', 'H3K4me2: 4',
+                 'H3K4me3: 5', 'H3K9ac: 6', 'H3K9me3: 7', 'H3K36me3: 8', 'H2AZ: 9', 'acH2AZ: 10',
+                 'H3: 11', 'H4K20me3: 12']
+
     # load & reshape the chromatin data
     chromatin_data = np.load(datapath + '.bound.chromtracks.npy')
     chromatin_data = np.reshape(chromatin_data, (-1, 13, 10))
@@ -46,9 +47,17 @@ def make_heatmap_per_quartile(datapath, out_path):
         heatmap_dat.append(mean_enrichment)
     heatmap_dat = np.array(heatmap_dat)
 
+    heatmap_dat = heatmap_dat.transpose()
+    print heatmap_dat
+
+    # reorder heatmap to match the order of the chromatin distribution plot:
+    # remove H3 as no domains are found here.
+    heatmap_dat = heatmap_dat[[1,9,10,3,0,4,5,6,8,2,7,12],:]
+    print heatmap_dat
+
     # plotting the heatmap
     fig, ax = plt.subplots()
-    sns.heatmap(heatmap_dat.transpose(), cmap='copper', yticklabels=hm_labels,
+    sns.heatmap(heatmap_dat, cmap='copper', yticklabels=hm_labels,
                 linewidths=0.5, linecolor='grey', cbar_kws={"shrink": 0.5})
     fig.set_size_inches(3, 6)
     fig.subplots_adjust(left=.30, bottom=.10, right=.90, top=.95)
