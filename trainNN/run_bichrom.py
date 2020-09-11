@@ -9,8 +9,8 @@ if __name__ == '__main__':
                                      and Bichrom')
     parser.add_argument('training_schema_yaml',
                         help='YAML file with paths to train, test and val data')
-    parser.add_argument('window_size', help='Size of genomic windows')
-    parser.add_argument('bin_size', help='size of bins for chromatin data')
+    parser.add_argument('window_size', help='Size of genomic windows', type=int)
+    parser.add_argument('bin_size', help='Size of bins for chromatin data', type=int)
     parser.add_argument('outdir', help='Output directory')
     args = parser.parse_args()
 
@@ -24,4 +24,5 @@ if __name__ == '__main__':
     outdir = args.outdir
     call(['mkdir', outdir])
 
-    train_bichrom(data_paths=data_paths, outdir=outdir)
+    train_bichrom(data_paths=data_paths, outdir=outdir, seq_len=args.window_size,
+                  bin_size=args.bin_size)
