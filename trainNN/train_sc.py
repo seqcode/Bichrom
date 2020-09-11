@@ -56,9 +56,9 @@ def add_new_layers(base_model, seq_len, no_of_chromatin_tracks, bin_size):
     xs = Dense(1, name='MSEQ-dense-new', activation='tanh')(curr_tensor)
 
     # Defining a M-C sub-network
-    chrom_input = Input(shape=(no_of_chromatin_tracks * (seq_len/bin_size),), name='chrom_input')
-    ci = Reshape((no_of_chromatin_tracks, (seq_len/bin_size)),
-                 input_shape=(no_of_chromatin_tracks * (seq_len/bin_size),))(chrom_input)
+    chrom_input = Input(shape=(no_of_chromatin_tracks * int(seq_len/bin_size),), name='chrom_input')
+    ci = Reshape((no_of_chromatin_tracks, int(seq_len/bin_size)),
+                 input_shape=(no_of_chromatin_tracks * int(seq_len/bin_size),))(chrom_input)
     # Permuting the input dimensions to match Keras input requirements:
     permute_func = Lambda(permute)
     ci = permute_func(ci)
