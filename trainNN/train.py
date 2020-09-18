@@ -108,9 +108,10 @@ def train_bichrom(data_paths, outdir, seq_len, bin_size):
     probas_out_sc = outdir + '/msc/' + 'test_probs.txt'
     records_file_path = outdir + '/metrics'
     print(records_file_path)
+    # save the best msc model
+    msc.save(outdir + 'full_model.best.hdf5')
 
     evaluate_models(sequence_len=seq_len, path=data_paths['test'],
                     probas_out_seq=probas_out_seq, probas_out_sc=probas_out_sc,
                     model_seq=mseq, model_sc=msc,
                     records_file_path=records_file_path)
-

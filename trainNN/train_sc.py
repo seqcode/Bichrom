@@ -1,15 +1,15 @@
-from __future__ import division
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 
 from sklearn.metrics import average_precision_score as auprc
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, concatenate, Input, LSTM
 from tensorflow.keras.layers import Conv1D, Reshape, Lambda
 from tensorflow.keras.optimizers import SGD
-import tensorflow.keras.backend as K
 from tensorflow.keras.callbacks import Callback
 from tensorflow.keras.callbacks import ModelCheckpoint
+import tensorflow.keras.backend as K
 
 from iterutils import train_generator
 
@@ -135,7 +135,7 @@ def transfer(train_path, val_path, basemodel, model, steps_per_epoch,
     checkpointer = ModelCheckpoint(records_path + 'model_epoch{epoch}.hdf5',
                                    verbose=1, save_best_only=False)
 
-    hist = model.fit_generator(epochs=15, steps_per_epoch=steps_per_epoch,
+    hist = model.fit_generator(epochs=1, steps_per_epoch=steps_per_epoch,
                                generator=train_data_generator,
                                validation_data=validation_data,
                                callbacks=[precision_recall_history,
