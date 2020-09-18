@@ -20,10 +20,12 @@ def get_embeddings_low_mem(model, seq_input, chrom_input):
     # iterate in batches for processing large datasets.
     for batch_start_idx in range(0, len(seq_input), 500):
         batch_end_idx = min(batch_start_idx + 500, len(seq_input))
-
+        current_batch_seq = seq_input[batch_start_idx:batch_end_idx]
+        current_batch_chrom = chrom_input[batch_start_idx:batch_end_idx]
+        print(current_batch_chrom)
         with eager_learning_phase_scope(value=0):
-            sn_activations = np.array(f([seq_input[batch_start_idx:batch_end_idx],
-                                         chrom_input[batch_start_idx, batch_end_idx]]))
+            sn_activations = np.array(f([current_batch_seq,
+                                         current_batch_chrom]))
         activations_rs = np.reshape(sn_activations, (sn_activations.shape[1], 2))
         activations_rs = activations_rs.astype(np.float64)
         embedding_list_by_batch.append(activations_rs)
@@ -33,3 +35,4 @@ def get_embeddings_low_mem(model, seq_input, chrom_input):
     w = np.reshape(w, (2,))
     weighted_embeddings = activations * w
     return weighted_embeddings
+
