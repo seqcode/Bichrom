@@ -15,17 +15,18 @@ from chromatin_interpretation import make_heatmap_per_quartile
 from chromatin_interpretation import plot_compensation
 
 # hills
-from findhills import find_hills
+from find_hills import find_hills
 
 
-def plot_seq_figures(datapath, model, out_path, no_of_chrom_datasets):
+def interpret_sequence(datapath, model, out_path, no_of_chrom_datasets):
     """
-    Uses a trained NN, and plots manuscript figures that explain sequence figures.
+    Uses a trained neural network,
+    and plots manuscript figures that explain sequence figures.
 
     Parameters:
         datapath (str): Prefix to the data files.
         model (keras Model): trained model in '.hdf5' format.
-        outpath (str): Directory to store output files + figs.
+        out_path (str): Directory to store output files + figs.
 
     Returns: None
         Saves all output files + figures in the output directory
@@ -59,9 +60,6 @@ def plot_seq_figures(datapath, model, out_path, no_of_chrom_datasets):
 
     # Get the number of k-mer matches at SP and CP sites
     get_multiplicity_at_categories(seq_data, chromatin_data, motifs, model, out_path)
-
-    exit(1)
-
     # Plot correlations between # of SIMULATED motifs and scores.
     outfile = out_path + '4c.pdf'
     no_of_repeats = 1000
@@ -76,18 +74,7 @@ def plot_seq_figures(datapath, model, out_path, no_of_chrom_datasets):
     motifs = ['CAGCTG', 'CACCTG']
     for motif in motifs:
         second_order_motifs(scores_file, model, motif=motif)
-    print "Plotting scores at kmers + 2bp flanks"
     plot_kmer_scores(scores_file, outfile)
-
-    # Embed all 8-mer/10-mer k-mers in a background of Ns
-    # Calculate scores for 'CAGSTG kmer + 1bp flanks' in SIMULATED sequences
-    # scores_file = out_path + '8mer.Ns.kmer_scores.txt'
-    # outfile = out_path + '4e.pdf'
-    # call(['rm', outfile])
-    # for motif in motifs:
-    #     motifs_in_ns(scores_file, model, motif=motif)
-    # print "Plotting scores at kmers + 1bp flanks"
-    # plot_dots(scores_file, outfile)
 
 
 def interpret_chromatin(datapath, model, out_path):
@@ -104,38 +91,28 @@ def interpret_chromatin(datapath, model, out_path):
     Produces a box plot in a sub-folder called datapath + Figure4
     Also, split the bedfiles based on chromatin scores
     """
-    # Load the input data
-    # Load the bound sequences
-    # seq_data = np.load(datapath + '.bound.seq.npy')
-    # chromatin_data = np.load(datapath + '.bound.chromtracks.npy')
-
-    # make the output directory
+    # create output directory
     call(['mkdir', out_path])
+    # Plot Figures 5A, 5B and 5C.
     make_heatmap_per_quartile(datapath, out_path=out_path)
-    # plot_compensation(datapath, out_path=out_path)
-    # calculating scores at chromatin input track domains..
-    # scores_at_domains(model, datapath, out_path)
-    # sum_heatmap(datapath, input_data, out_path)
-    # calculating chromatin scores at chromHMM states"
-    # order = scores_at_states(model, datapath, out_path)
-    # print "Calculating sequence scores at chromHMM states"
-    # seq_scores_at_states(model, datapath, input_data, out_path, order)
+    plot_compensation(datapath, out_path=out_path)
+    scores_at_domains(model, datapath, out_path=out_path)
 
 
 def main():
 
     datapath = sys.argv[1]
     model = sys.argv[2]
-    outpath = sys.argv[3]
+    outdir = sys.argv[3]
     no_of_chrom_datasets = 13
 
     model = load_model(model)
 
-    # sequence_attribution(args.datapath, model)
-    # plot_seq_figures(datapath=datapath, model=model, out_path=outpath,
-    #                  no_of_chrom_datasets=no_of_chrom_datasets)
-
-    interpret_chromatin(datapath=datapath, model=model, out_path=outpath)
+    # Figure 4
+    interpret_sequence(datapath=datapath, model=model, out_path=outdir,
+                       no_of_chrom_datasets=no_of_chrom_datasets)
+    # Figure 5
+    interpret_chromatin(datapath=datapath, model=model, out_path=outdir)
 
 
 if __name__ == "__main__":

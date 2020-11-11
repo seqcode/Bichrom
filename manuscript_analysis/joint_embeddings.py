@@ -1,6 +1,10 @@
 from __future__ import division
-import keras.backend as K
+import tensorflow.keras.backend as K
+import matplotlib
+matplotlib.use('Agg')
 import seaborn as sns
+import tensorflow as tf
+
 from pylab import *
 
 
@@ -37,7 +41,7 @@ def get_embeddings(model, seq_input, chrom_input):
     # reshape with 2 nodes in the pre-logistic (or output) layer
     activations_rs = np.reshape(activations, (activations.shape[1], 2))
     activations_rs = activations_rs.astype(np.float64)
-    print activations_rs.shape
+    print(activations_rs.shape)
     # Now, we want to get the weights assigned to these activations.
     # CHECK: NEED TO MAKE SURE I'M USING THE CORRECT SEQ & CHROM EDGES
     w, b = model.layers[-1].get_weights()

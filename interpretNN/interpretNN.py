@@ -10,9 +10,6 @@ from utils import load_data
 # Importing from Keras
 from keras.models import load_model
 
-# joint embeddings
-from joint_embeddings import get_embeddings, get_embeddings_low_mem
-from joint_embeddings import plot_1d_chrom, plot_1d_seq
 from joint_embeddings import plot_embeddings
 from joint_embeddings import plot_embeddings_bound_only
 

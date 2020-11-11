@@ -1,8 +1,6 @@
 import numpy as np
-import tensorflow as tf
 import tensorflow.keras.backend as K
 from tensorflow.python.keras.backend import eager_learning_phase_scope
-from tensorflow.keras.models import load_model
 
 
 def keras_extract_fn(model):
@@ -35,4 +33,3 @@ def get_embeddings_low_mem(model, seq_input, chrom_input):
     w = np.reshape(w, (2,))
     weighted_embeddings = activations * w
     return weighted_embeddings
-

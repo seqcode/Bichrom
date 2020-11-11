@@ -1,3 +1,8 @@
+"""
+Functions to analyze preexisting mouse ES chromatin data at Ascl1 binding sites.
+These functions are called by explain_variance.py
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
