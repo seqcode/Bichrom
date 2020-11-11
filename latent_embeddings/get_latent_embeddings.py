@@ -7,7 +7,6 @@ def keras_extract_fn(model):
     seq_input = model.get_layer('seq').input
     chrom_input = model.get_layer('chrom_input').input
     emb = model.layers[-1].input
-    print(emb.shape)
     return K.function([seq_input, chrom_input], [emb])
 
 
@@ -20,6 +19,7 @@ def get_embeddings_low_mem(model, seq_input, chrom_input):
         batch_end_idx = min(batch_start_idx + 500, len(seq_input))
         current_batch_seq = seq_input[batch_start_idx:batch_end_idx]
         current_batch_chrom = chrom_input[batch_start_idx:batch_end_idx]
+        print('Current chromatin batch')
         print(current_batch_chrom)
         with eager_learning_phase_scope(value=0):
             sn_activations = np.array(f([current_batch_seq,
