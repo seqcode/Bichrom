@@ -17,7 +17,8 @@ import re
 
 
 def make_onehot(buf, seq_length):
-    fd = {'A': [1, 0, 0, 0], 'T': [0, 1, 0, 0], 'G': [0, 0, 1, 0], 'C': [0, 0, 0, 1], 'N': [0, 0, 0, 0]}
+    fd = {'A': [1, 0, 0, 0], 'T': [0, 1, 0, 0], 'G': [0, 0, 1, 0],
+          'C': [0, 0, 0, 1], 'N': [0, 0, 0, 0]}
     onehot = [fd[base] for seq in buf for base in seq]
     onehot_np = np.reshape(onehot, (-1, seq_length, 4))
     return onehot_np
@@ -55,10 +56,7 @@ def get_multiplicity_at_categories(seq_input, chromatin_input, motifs,
 
     # get the median sequence score
     seq_scores = bound_embeddings[:, 0]
-    print(seq_scores.shape)
     median_bound_seqscore = np.median(seq_scores)
-    print median_bound_seqscore
-
 
     # get the onehot vectors for the sequences in "low" and "high" categories
     onehot_high = seq_input[seq_scores > median_bound_seqscore]
@@ -68,11 +66,9 @@ def get_multiplicity_at_categories(seq_input, chromatin_input, motifs,
     seq_low = [''.join(convert_to_dictionary(x)) for x in onehot_low]
     seq_high = [''.join(convert_to_dictionary(x)) for x in onehot_high]
 
-    np.savetxt(outfile + 'seq_lessthan_median.txt', seq_low, fmt='%s')
-    np.savetxt(outfile + 'seq_gtthan_median.txt', seq_high, fmt='%s')
-
+    np.savetxt(outfile + 'seq_less_than_median.txt', seq_low, fmt='%s')
+    np.savetxt(outfile + 'seq_gt_than_median.txt', seq_high, fmt='%s')
     # calculate the average number of motifs in each sample
-
     def calc_no_of_motifs(sequence_set):
         no_of_motifs = []
         for vector in sequence_set:
@@ -82,8 +78,6 @@ def get_multiplicity_at_categories(seq_input, chromatin_input, motifs,
             for motif in motifs:
                 match.append(len(re.findall(motif, seq)))
             no_of_motifs.append(np.sum(match))
-        print np.mean(no_of_motifs)
-
     calc_no_of_motifs(onehot_low)
     calc_no_of_motifs(onehot_high)
 

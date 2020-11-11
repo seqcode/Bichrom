@@ -7,7 +7,7 @@ from keras.models import load_model
 from joint_embeddings import get_embeddings_low_mem
 from sequence_interpretation import plot_multiplicity, plot_kmer_scores, plot_correlation, plot_dots
 from sequence_interpretation import motifs_in_ns, second_order_motifs, get_multiplicity_at_categories
-from sequence_attribution import get_sequence_attribution
+from sequence_attribution import get_gradients
 
 # chromatin
 from chromatin_interpretation import scores_at_domains
@@ -35,18 +35,6 @@ def interpret_sequence(datapath, model, out_path, no_of_chrom_datasets):
     seq_data = np.load(datapath + '.bound.seq.npy')
     chromatin_data = np.load(datapath + '.bound.chromtracks.npy')
     call(['mkdir', out_path])
-
-    # Attribution
-    # Getting sequence attribution
-    # grad, grad_star_inp = get_sequence_attribution(datapath, model, (seq_data, chromatin_data),
-    #                                                no_of_chrom_datatracks=no_of_chrom_datasets)
-    # grad_star_inp = np.load(out_path + 'gradients_star_inp.npy')
-    # this saves a '.hills' file with event locations
-    # find_hills(grad_star_inp=grad_star_inp, datapath=datapath, out_path=out_path)
-    # np.save(out_path + "gradients", grad)
-    # np.save(out_path + "gradients_star_inp", grad_star_inp)
-    # rb_attribution = np.load(out_path + "sequence_attribution.npy")
-    # visualize(datapath, out_path, input_data, rb_attribution)
 
     # Plot frequencies of 'CAGSTG' k-mers
     embedding = get_embeddings_low_mem(model, seq_input=seq_data,
