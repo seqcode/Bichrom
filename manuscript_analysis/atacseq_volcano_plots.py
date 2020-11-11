@@ -8,9 +8,11 @@ import matplotlib.pyplot as plt
 def plot_atac(datapath):
     """
     plotting the differential atac-seq at iA and iN neurons
-    :param datapath: path to an N * 2 atac-seq file with normalized read counts
-    at iA and iN neurons
-    :return: None
+    Parameters:
+     datapath: path to an DESeq2 output file:
+     ATAC-seq at iAscl1 vs. iNeurog2 neurons  atac-seq file with normalized \
+    Returns:
+        None
     """
     dat = pd.read_csv(datapath, delimiter='\t')
     fig, ax = plt.subplots()
