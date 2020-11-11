@@ -12,9 +12,10 @@ def make_heatmap_per_quartile(datapath, out_path):
     Each row is a histone modification, plotting median enrichment for each HM
     at the four quartiles based on the chromatin sub-network scores.
 
-    :param datapath: path + prefix to Ascl1 data
-    :param out_path: output prefix
-    :return: None
+    Parameters:
+        datapath: path + prefix to Ascl1 data
+        out_path: output file prefix
+    Returns: None
     """
     # Label order as in design file
     hm_labels = ['ATACSEQ: 0', 'H3K27ac: 1', 'H3K27me3: 2', 'H3K4me1: 3', 'H3K4me2: 4',
@@ -48,12 +49,11 @@ def make_heatmap_per_quartile(datapath, out_path):
     heatmap_dat = np.array(heatmap_dat)
 
     heatmap_dat = heatmap_dat.transpose()
-    print heatmap_dat
 
-    # reorder heatmap to match the order of the chromatin distribution plot:
+    # reorder heatmap to match the order of the chromatin distribution plot
+    # (Fig. 5A)
     # remove H3 as no domains are found here.
-    heatmap_dat = heatmap_dat[[1,9,10,3,0,4,5,6,8,2,7,12],:]
-    print heatmap_dat
+    heatmap_dat = heatmap_dat[[1, 9, 10, 3, 0, 4, 5, 6, 8, 2, 7, 12],:]
 
     # plotting the heatmap
     fig, ax = plt.subplots()
@@ -61,20 +61,27 @@ def make_heatmap_per_quartile(datapath, out_path):
                 linewidths=0.5, linecolor='grey', cbar_kws={"shrink": 0.5})
     fig.set_size_inches(3, 6)
     fig.subplots_adjust(left=.30, bottom=.10, right=.90, top=.95)
-    plt.savefig(out_path + '5b.pdf')
+    plt.savefig(out_path + '5B.pdf')
 
 
 def plot_compensation(datapath, out_path):
     """
     Figure 5C and 5D
-    :param datapath: path + prefix to input data
-    :param out_path: output prefix
-    :return: None
+    Plotting the average BichromSEQ and BichromCHR scores at binding sites within
+    each of the 12 chromHMM states called in mouse ES cells.
+    Note: For this function, we require to already have extracted the latent 2-D embedding
+    This can be done using joint_embeddings/get_latent_embeddings.py
+    Parameters:
+        datapath: path + prefix to input data
+        out_path: output file prefix
+    Note: The input data directory also must contain a genome annotation file
+    derived from chrom
+    Returns: None
     """
     # Loading the joint embeddings:
     embedding = np.loadtxt(datapath + '.embedding.txt')
-    mseq_score = embedding[:, 0]
-    mchrom_score = embedding[:, 1]
+    bichrom_seq_score = embedding[:, 0]
+    bichrom_chr_score = embedding[:, 1]
 
     # loading the mES chromHMM annotations
     annotation = np.loadtxt(datapath + '.bound.chromHMM.annotation', dtype=str)
@@ -88,11 +95,10 @@ def plot_compensation(datapath, out_path):
                    'Transcriptional Transition', 'Transcriptional Elongation',
                    'Weak/Poised Enhancers']
 
-    data = np.vstack((mseq_score, mchrom_score, hmm_states_at_ascl1sites))
+    data = np.vstack((bichrom_seq_score, bichrom_chr_score,
+                      hmm_states_at_ascl1sites))
     data = data.transpose()
-
     state_labels_idx = [int(x[1:]) for x in state_labels]
-
     # getting the mean chromatin and sequence network scores at states.
     seq_mean_values = []
     chrom_mean_values = []
@@ -107,11 +113,8 @@ def plot_compensation(datapath, out_path):
 
     chrom_mean_values = np.array(chrom_mean_values)[np.argsort(state_labels_idx)]
     seq_mean_values = np.array(seq_mean_values)[np.argsort(state_labels_idx)]
-
-    print state_labels_idx
-    print sizes
+    # scaling sizes
     sizes = [x/10 for x in sizes]
-
     # Plotting the bubble plots
     fig, axs = plt.subplots(1, 2)
     # chromatin mean values
@@ -119,16 +122,23 @@ def plot_compensation(datapath, out_path):
     for y_coordinate in range(1, 12):
        axs[0].axhline(y=y_coordinate, xmin=0, xmax=1,
                   ls='--', color='grey', lw=1)
-
     # sequence mean values
     axs[1].scatter(seq_mean_values, state_labels_idx, s=sizes, color='#084177')
     for y_coordinate in range(1, 12):
        axs[1].axhline(y=y_coordinate, xmin=0, xmax=1,
                   ls='--', color='grey', lw=1)
-    plt.savefig(out_path + '5c.pdf')
+    plt.savefig(out_path + '5C.pdf')
 
 
 def scores_at_domains(model, datapath, out_path):
+    """
+    Plot the distribution of preexisting chromatin scores at the bound
+    TF sites.
+    Parameters:
+        model: A tf.Keras model.
+        datapath: Path to input data directory
+        out_path: Output file prefix.
+    """
     # load the entire chromatin data
     chromatin = np.loadtxt(datapath + '.chromtracks')
     domains = np.loadtxt(datapath + '.domains')
@@ -140,17 +150,15 @@ def scores_at_domains(model, datapath, out_path):
     for idx, label in enumerate(hm_labels):
         enrichment = domains[:, idx]
         curr_chrom = chromatin[enrichment == 1]
-        print len(curr_chrom)
 
         # Take care of the experiments with NO domain calls
         if len(curr_chrom) == 0:
             chrom = np.zeros(shape=(1000, 130))
             seq = np.zeros(shape=(1000, 500, 4))
-            # raise an exception here..
+            raise Exception("Your experiment must have > 0 domain calls")
         else:
             seq = np.zeros(shape=(len(curr_chrom), 500, 4))
-
-        # get embeddings:
+        # get embeddings
         embeddings = get_embeddings_low_mem(model, seq, curr_chrom)
         chrom_scores = embeddings[:, 1]
         curr = np.vstack((chrom_scores,
@@ -159,10 +167,9 @@ def scores_at_domains(model, datapath, out_path):
         domain_scores.append(curr)
 
     dat = np.vstack(domain_scores)
-    # Saving the data here in case I want to use it further:-
+    # Saving the data here in case we want to use it further:-
     np.savetxt(out_path + 'chrom_scores.txt', dat, fmt='%s')
-
-    # Figure
+    # Plotting
     dat = pd.read_csv(out_path + 'chrom_scores.txt', header=None,
                       sep=" ", names=['value', 'track'])
     sns.set_style('ticks')
@@ -185,4 +192,4 @@ def scores_at_domains(model, datapath, out_path):
     fig.set_size_inches(4, 7)
     plt.subplots_adjust(hspace=0.75)
     fig.subplots_adjust(left=.20, bottom=.05, right=.99, top=.97)
-    plt.savefig(out_path + '5a.pdf')
+    plt.savefig(out_path + '5A.pdf')
