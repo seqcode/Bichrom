@@ -63,7 +63,7 @@ def plot_embeddings(data_path, outpath):
     Parameters:
         data_path: Input file paths (N rows * 2 columns) storing the 2-D co-ordinates
         for each binding site in the latent space. The embeddings must be derived
-        using joint_embeddings/get_latent_embeddings.py
+        using latent_embeddings/get_latent_embeddings.py
         Note: This function assumes that the files are saved with an \
         ".embedding.txt" extension. Provide only the prefix as an argument.
         For example, if the 2-D embedding is stored in "~/Prefix/Oct4.embedding.txt",

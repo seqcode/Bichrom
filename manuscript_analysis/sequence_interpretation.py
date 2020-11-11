@@ -1,15 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import sys
 
 from joint_embeddings import get_embeddings_low_mem
 
-import matplotlib as mpl
-from matplotlib.text import TextPath
-from matplotlib.patches import PathPatch
-from matplotlib.font_manager import FontProperties
-# from interpretNN.utils import make_onehot
 import itertools
 from collections import defaultdict
 import pandas as pd

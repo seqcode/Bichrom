@@ -75,7 +75,7 @@ def plot_compensation(datapath, out_path):
     Plotting the average BichromSEQ and BichromCHR scores at binding sites within
     each of the 12 chromHMM states called in mouse ES cells.
     Note: For this function, we require to already have extracted the latent 2-D embedding
-    This can be done using joint_embeddings/get_latent_embeddings.py
+    This can be done using latent_embeddings/get_latent_embeddings.py
     Parameters:
         datapath: path + prefix to input data
         out_path: output file prefix
