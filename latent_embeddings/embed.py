@@ -78,7 +78,7 @@ if __name__ == "__main__":
     parser.add_argument('-seq', required=True,
                         help='Sequence file, each line contains sequences '
                              'associated with one genomic window')
-    parser.add_argument('-chrom', nargs='+', required=True
+    parser.add_argument('-chrom', nargs='+', required=True,
                         help='List of files, each containing chromatin features, '
                              'associated with one genomic window per line')
     parser.add_argument('-length', type=int, required=True,
