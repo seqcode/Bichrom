@@ -35,9 +35,6 @@ optional arguments:
 ```
   
 ### Input Files: Description  
-run_bichrom.py trains and evaluates two models: 
-* A sequence based classifier for TF binding prediction (Bichrom<sub>SEQ</sub>)
-* A sequence + pre-existing chromatin based classifier for TF binding prediction (Bichrom)
 
 **Required arguments**: 
 
@@ -62,15 +59,15 @@ This is a YAML file containing containing paths to the training data (sequence, 
   </pre>
 
   **Description for the input files provided in the YAML configuration**: 
-  Each data set: train, test and validation, corresponds to 500 base pair windows on the genome. The "seq", "labels" and "chromatin_tracks" files   for the train, test and validation sets contain features associated with these 500 base pair windows. 
+  Each input data point (train, test or validation) corresponds to a 500 base pair window on the genome. The "seq", "labels" and "chromatin_tracks" files contain genomic features associated with these input 500 base pair windows. 
 
-  - **seq**: The seq file contains one sequence per line. For example, if your training set has 25,100 genomic windows, the seq file will contain 25,100 lines.  
+  - **seq**: The sequence input file contains one sequence per line. For example, if your training set has 25,100 genomic windows, the seq file will contain 25,100 lines. (Permitted bases: A, T, G, C, N). 
 
-  - **labels**: The labels file contains a binary label that has been assigned each training window. (1 or 0)  
+  - **labels**: This file contains a binary label that has been assigned to each training, validation and test input data point. (Must be 0/1).  
   
-  - **chromatin_tracks**: Multiple chromatin files can be passed to to the program through the YAML file. (The YAML field chromatin_tracks accepts a list of file locations.) Each line in a chromatin track file contains tab separated binned chromatin data. The data can be binned at any resolution.   For example, if the genomic windows used for train, test and validation are 500 base pair long, then: 
+  - **chromatin_tracks**: Multiple chromatin files can be passed to Bichrom through the YAML file. (The YAML field chromatin_tracks accepts a list of file locations.) Each line in a chromatin track file contains tab separated binned chromatin data. The data can be binned at any resolution.   For example, if the genomic windows used to train Bichrom are 500 base pairs, then: 
     * If bins=50 base pairs, then each line in the chromatin file will contain 10 (500/50) tab separated values. 
-    * If bins=1 base pair, then each line in the chromatin file will contain 500 values. Note that all chromatin feature files that are passed to this argument must be binned at the same resolution.  
+    * If bins=1 base pair, then each line in the chromatin file will contain 500 values. Note that all chromatin feature files that are passed to Bichrom must be binned at the same resolution.  
 
 Other required arguments: 
 
@@ -78,6 +75,5 @@ Other required arguments:
 * **bin_size**: Binning applied to the chromatin data. (For example, if window_size=500 and bin_size=10, each line in a chromatin_track file must contain 500/10 tab separated values)
 * **outdir**: Output directory where all Bichrom output files will be stored. 
   * Bichrom outputs the validation and test metrics (auROC and auPRC) for both a sequence-only network (Bichrom<sub>SEQ</sub>) and a sequence + preexisting chromatin bimodal network (Bichrom). It additionally plots the test Precision Recall curves for both models; as well as test recall at a false positive rate=0.01. 
-   
 
 
