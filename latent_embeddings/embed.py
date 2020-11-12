@@ -73,21 +73,16 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description=
                                      'Derive and plot 2-D embeddings')
-    parser.add_argument('-model',
-                        help='Trained bichrom model',
+    parser.add_argument('-model', help='Trained bichrom model',
                         required=True)
-    parser.add_argument('-seq',
+    parser.add_argument('-seq', required=True,
                         help='Sequence file, each line contains sequences '
-                             'associated with one genomic window',
-                        required=True)
-    parser.add_argument('-chrom',
-                        nargs='+',
+                             'associated with one genomic window')
+    parser.add_argument('-chrom', nargs='+', required=True
                         help='List of files, each containing chromatin features, '
-                             'associated with one genomic window per line',
-                        required=True)
-    parser.add_argument('-length',
-                        help='Length of training windows', type=int,
-                        required=True)
+                             'associated with one genomic window per line')
+    parser.add_argument('-length', type=int, required=True,
+                        help='Length of training windows')
     parser.add_argument('-outdir', help='Output directory',
                         required=True)
 
