@@ -1,5 +1,5 @@
 ### Bichrom Embeddings
-This module will report latent (2-D) co-ordinates for any DNA sequence and chromatin feature combination, given a trained Bichrom model.
+This module will report latent (2-D) co-ordinates for any DNA sequence and chromatin feature combination, given a trained Bichrom model. It will also plot the latent embeddings. 
 
 **(see trainNN README.md for details on how to train a Bichrom model)**
 
