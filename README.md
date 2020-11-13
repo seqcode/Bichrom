@@ -90,5 +90,5 @@ Other required arguments:
   * best_model.hdf5: A tensorflow.Keras Model (with the highest validation set auPRC)
   * precision-recall curves for Bichrom-SEQ and Bichrom.
 
-### Get 2-D Bichrom embeddings:
+### 2-D Bichrom embeddings
 For 2-D latenet embeddings, please refer to the README in the ```Bichrom/latent_embeddings directory```
