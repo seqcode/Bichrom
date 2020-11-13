@@ -73,7 +73,17 @@ Other required arguments:
 
 * **window_size**: The size of genomic windows used for training, validation and testing. (For example: 500)
 * **bin_size**: Binning applied to the chromatin data. (For example, if window_size=500 and bin_size=10, each line in a chromatin_track file must contain 500/10 tab separated values)
-* **outdir**: Output directory where all Bichrom output files will be stored. 
-  * Bichrom outputs the validation and test metrics (auROC and auPRC) for both a sequence-only network (Bichrom<sub>SEQ</sub>) and a sequence + preexisting chromatin bimodal network (Bichrom). It additionally plots the test Precision Recall curves for both models; as well as test recall at a false positive rate=0.01. 
+* **outdir**: Output directory. Bichrom creates the following outputs files and sub-directories: 
+  * mseq: 
+    * records the validation loss and auPRC for each epoch the sequence-only network (Bichrom-SEQ).
+    * stores models (tf.Keras Models) checkpointed after each epoch. 
+    * stores Bichrom-SEQ ouput probabilities over the testing data. 
+  * msc: 
+    * records the validation loss and auPRC for each epoch the Bichrom. 
+    * stores models (tf.Keras Models) checkpointed after each epoch. 
+    * stores the Bichrom ouput probabilities over the testing data. 
+  * metrics.txt: stores the test auROC and the auPRC for both the sequence-only network (Bichrom-SEQ) and for Bichrom. 
+  * best_model.hdf5: A tensorflow.Keras Model (with the highest validation set auPRC)
+  * precision-recall curves for Bichrom-SEQ and Bichrom.
 
 
