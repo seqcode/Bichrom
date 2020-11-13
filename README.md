@@ -10,8 +10,12 @@ Srivastava, D., Aydin, B., Mazzoni, E.O. and Mahony, S., 2020. An interpretable 
 python >= 3.5  
 We suggest using anaconda to create a virtual environment using the provided YAML configuration file:
 `conda env create -f bichrom.yml`  
+
 Alternatively, to install requirements using pip: 
 `pip install -r requirements.txt`
+
+Note: For GPU compatibility, tensorflow 2.2.1 requires CUDA 10.1 and cuDNN >= 7. If your system has a preexisting installation of the appropriate CUDA and cuDNN versions, no action is required. However, if you would like to use anaconda to install the appropriate CUDA dependencies, please use:
+`conda env create -f bichrom-gpu.yml`
 
 ### Usage
 ```
