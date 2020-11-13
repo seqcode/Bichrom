@@ -1,0 +1,22 @@
+name: bichrom-gpu
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - pip=20.1.1
+  - python=3.6
+  - cudatoolkit=10.1
+  - cudnn=7.6
+  - nccl=2.4
+  - pip:
+    - h5py==2.10.0
+    - keras==2.4.3
+    - keras-preprocessing==1.1.2
+    - matplotlib==3.0.3
+    - numpy==1.18.5
+    - scikit-learn==0.22.2.post1
+    - scipy==1.4.1
+    - seaborn==0.9.1
+    - tensorflow==2.2.1
+    - tensorflow-estimator==2.2.1
+prefix: env-bichrom-gpu
