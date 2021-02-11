@@ -7,11 +7,11 @@ if __name__ == '__main__':
     # parsing
     parser = argparse.ArgumentParser(description='Train and compare BichromSEQ\
                                      and Bichrom')
-    parser.add_argument('training_schema_yaml',
+    parser.add_argument('-training_schema_yaml', required=True,
                         help='YAML file with paths to train, test and val data')
-    parser.add_argument('window_size', help='Size of genomic windows', type=int)
-    parser.add_argument('bin_size', help='Size of bins for chromatin data', type=int)
-    parser.add_argument('outdir', help='Output directory')
+    parser.add_argument('-len', help='Size of genomic windows',
+                        required=True, type=int)
+    parser.add_argument('-outdir', required=True, help='Output directory')
     args = parser.parse_args()
 
     # load the yaml file with input data paths:
@@ -25,4 +25,4 @@ if __name__ == '__main__':
     call(['mkdir', outdir])
 
     train_bichrom(data_paths=data_paths, outdir=outdir, seq_len=args.window_size,
-                  bin_size=args.bin_size)
+                  bin_size=10)
