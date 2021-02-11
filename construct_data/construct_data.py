@@ -333,7 +333,7 @@ def construct_training_data(genome_sizes_file, peaks_file, genome_fasta_file,
     np.savetxt(out_prefix + '.seq', X_seq, fmt='%s')
     for idx, chromatin_track in enumerate(chromatin_track_list):
         chromatin_out_files = [x.split('.')[0] for x in chromatin_track_list]
-        np.savetxt(chromatin_out_files[idx] + '.chromatin', X_chromatin_list[idx], delimiter='\t', fmt='%1.3f')
+        np.savetxt(out_prefix + '.' + chromatin_out_files[idx] + '.chromatin', X_chromatin_list[idx], delimiter='\t', fmt='%1.3f')
     np.savetxt(out_prefix + '.labels', y, fmt='%s')
     return training_coords
 
@@ -443,7 +443,7 @@ def construct_test_data(genome_sizes_file, peaks_file, genome_fasta_file,
     np.savetxt(out_prefix + '.seq', X_seq, fmt='%s')
     for idx, chromatin_track in enumerate(chromatin_track_list):
         chromatin_out_files = [x.split('.')[0] for x in chromatin_track_list]
-        np.savetxt(chromatin_out_files[idx] + '.chromatin', X_chromatin_list[idx], delimiter='\t', fmt='%1.3f')
+        np.savetxt(out_prefix + '.' + chromatin_out_files[idx] + '.chromatin', X_chromatin_list[idx], delimiter='\t', fmt='%1.3f')
     np.savetxt(out_prefix + '.labels', y_test, fmt='%d')
     test_coords.to_csv(out_prefix + '.bed', sep='\t')
     return test_coords
@@ -472,6 +472,7 @@ def main():
 
     call(['mkdir', args.outdir])
 
+    print(args.chromtracks)
     print('Constructing train data ...')
     coords = construct_training_data(genome_sizes_file=args.info, peaks_file=args.peaks,
                                      genome_fasta_file=args.fa,
