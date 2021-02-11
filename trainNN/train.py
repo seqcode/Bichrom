@@ -41,7 +41,7 @@ def run_seq_network(train_path, val_path, records_path, seq_len):
         M-SEQ model (Model): A keras model
     """
     # Create an output directory for saving models + per-epoch logs.
-    records_path_seq = records_path + '/mseq/'
+    records_path_seq = records_path + '/seqnet/'
     call(['mkdir', records_path_seq])
 
     # current hyper-parameters
@@ -73,7 +73,7 @@ def run_bimodal_network(train_path, val_path, records_path, base_seq_model,
     """
 
     # Create an output directory for saving models + per-epoch logs.
-    records_path_sc = records_path + '/msc/'
+    records_path_sc = records_path + '/bichrom/'
     call(['mkdir', records_path_sc])
 
     curr_params = Params()
@@ -104,8 +104,8 @@ def train_bichrom(data_paths, outdir, seq_len, bin_size):
                               base_seq_model=mseq, bin_size=bin_size, seq_len=seq_len)
 
     # Evaluate both models on held-out test sets and plot metrics
-    probas_out_seq = outdir + '/mseq/' + 'test_probs.txt'
-    probas_out_sc = outdir + '/msc/' + 'test_probs.txt'
+    probas_out_seq = outdir + '/seqnet/' + 'test_probs.txt'
+    probas_out_sc = outdir + '/bichrom/' + 'test_probs.txt'
     records_file_path = outdir + '/metrics'
     print(records_file_path)
     # save the best msc model
