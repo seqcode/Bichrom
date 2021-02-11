@@ -26,6 +26,45 @@ Clone and navigate to the Bichrom repository.
 
 **Step 1: Construct (a) Training Set, (b) Validation Set and (c) Test Set.**
 
+```
+cd construct data
+usage: construct_data.py [-h] -info INFO -fa FA -blacklist BLACKLIST -len LEN
+                         -acc_domains ACC_DOMAINS -chromtracks CHROMTRACKS
+                         [CHROMTRACKS ...] -peaks PEAKS -o OUTDIR
+
+Construct Training Data For Bichrom
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -info INFO            Genome sizes file
+  -fa FA                The fasta file for the genome of interest
+  -blacklist BLACKLIST  Blacklist file for the genome of interest
+  -len LEN              Size of training, test and validation windows
+  -acc_domains ACC_DOMAINS
+                        Bed file with accessible domains
+  -chromtracks CHROMTRACKS [CHROMTRACKS ...]
+                        A list of BigWig files for all input chromatin
+                        experiments
+  -peaks PEAKS          A ChIP-seq or ChIP-exo peak file in multiGPS file
+                        format
+  -o OUTDIR, --outdir OUTDIR
+                        Output directory for storing train, test data
+
+```
+Input Descriptions
+
+-info : This is a standard genome sizes file, recording the size of each chromosome. It contains 2 tab-separated columns containing the chromosome name and chromosome size. For an example, please see: sample_data/mm10.info. Genome sizes files are typically available from UCSC Genome Browser.
+
+-fa: This is a fasta file from which train, test and validation data should be constructed. 
+-len: Length of training, test and validation windows. (Recommended=500)
+-acc_domains: A BED file containing accessible domains. This will be used for sampling from accessible chromatin while constructing the training data. 
+-chromtracks: One or more BigWig files representing the chromatin datasets to be used as predictors of TF binding. 
+-peaks: A ChIP-seq or ChIP-exo peaks file in the multiGPS file format. Each peak (line in file) is represented as chromosome:midpoint. For an example, please see: sample_data/Ascl1.events 
+-o: Output directory for storing output train, test and validation datasets. 
+
+Optional Arguments:
+-blacklist: A blacklist BED file, with artifactual regions to be excluded from the training. For an example, please see: samples/mm10_blacklist.bed
+
 
 ```
 # Clone and navigate to the iTF repository. 
