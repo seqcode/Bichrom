@@ -8,7 +8,7 @@ https://doi.org/10.1186/s13059-020-02218-6
 
 ## Installation and Requirements 
 
-**Please Note**: This repository has been updated as of *Feb. 11 2021* to allow for more readable and user-friendly input datasets.  
+**Please Note**: This repository has been updated as of **02/11/2021*** to allow for more readable and user-friendly input datasets.  
 
 python >= 3.5  
 We suggest using anaconda to create a virtual environment using the provided YAML configuration file:
