@@ -51,19 +51,28 @@ optional arguments:
                         Output directory for storing train, test data
 
 ```
-Input Descriptions
+#### Input Descriptions
 
--info : This is a standard genome sizes file, recording the size of each chromosome. It contains 2 tab-separated columns containing the chromosome name and chromosome size. For an example, please see: sample_data/mm10.info. Genome sizes files are typically available from UCSC Genome Browser.
+*Required Arguments*
 
--fa: This is a fasta file from which train, test and validation data should be constructed. 
--len: Length of training, test and validation windows. (Recommended=500)
--acc_domains: A BED file containing accessible domains. This will be used for sampling from accessible chromatin while constructing the training data. 
--chromtracks: One or more BigWig files representing the chromatin datasets to be used as predictors of TF binding. 
--peaks: A ChIP-seq or ChIP-exo peaks file in the multiGPS file format. Each peak (line in file) is represented as chromosome:midpoint. For an example, please see: sample_data/Ascl1.events 
--o: Output directory for storing output train, test and validation datasets. 
+**-info** : This is a standard genome sizes file, recording the size of each chromosome. It contains 2 tab-separated columns containing the chromosome name and chromosome size. For an example, please see: sample_data/mm10.info. Genome sizes files are typically available from UCSC Genome Browser.
 
-Optional Arguments:
--blacklist: A blacklist BED file, with artifactual regions to be excluded from the training. For an example, please see: samples/mm10_blacklist.bed
+**-fa**: This is a fasta file from which train, test and validation data should be constructed. 
+
+**-len**: Length of training, test and validation windows. (Recommended=500)
+
+**-acc_domains**: A BED file containing accessible domains. This will be used for sampling from accessible chromatin while constructing the training data. 
+
+**-chromtracks**: One or more BigWig files representing the chromatin datasets to be used as predictors of TF binding. 
+
+**-peaks**: A ChIP-seq or ChIP-exo peaks file in the multiGPS file format. Each peak (line in file) is represented as chromosome:midpoint. For an example, please see: sample_data/Ascl1.events 
+
+**-o**: Output directory for storing output train, test and validation datasets. 
+
+*Optional Arguments*:
+
+
+**-blacklist**: A blacklist BED file, with artifactual regions to be excluded from the training. For an example, please see: sample_data/mm10_blacklist.bed
 
 
 ```
