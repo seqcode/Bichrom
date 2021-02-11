@@ -73,7 +73,7 @@ For an example file, please see: `sample_data/mES_atacseq_domains.bed`.
 One or more BigWig files containing histone ChIP-seq or ATAC-seq data. 
 
 **peaks**:  
-A ChIP-seq or ChIP-exo TF peaks in the multiGPS file format. Each peak is represented as **chromosome:midpoint**.  
+ChIP-seq or ChIP-exo TF peaks in the multiGPS file format. Each peak is represented as **chromosome:midpoint**.  
 For an example file, please see: `sample_data/Ascl1.events`.
 
 **nbins**:  
@@ -149,7 +149,7 @@ Within each category, Bichrom expects **3 file types**:
 * Chromatin Files: 1 file per chromatin experiment. Each input chromatin file contains chromatin signal (binned at any resolution) over the input genomic windows.
 * Label File: This file contains binary labels associated with TF binding over the input genomic windows. 
 
-File paths to these files should be summarized in a configuration YAML file. For the structure of the YAML file, please see: sample_data/sample_custom_config.yaml
+File paths to these files should be summarized in a configuration YAML file. For the structure of the YAML file, please see:   `sample_data/sample_custom_config.yaml`
 
 
 ### 2-D Bichrom embeddings
