@@ -5,7 +5,7 @@ from train import train_bichrom
 
 if __name__ == '__main__':
     # parsing
-    parser = argparse.ArgumentParser(description='Train and compare BichromSEQ\
+    parser = argparse.ArgumentParser(description='Train and compare Bichrom-SEQ\
                                      and Bichrom')
     parser.add_argument('-training_schema_yaml', required=True,
                         help='YAML file with paths to train, test and val data')
