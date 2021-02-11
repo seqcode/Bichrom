@@ -19,7 +19,7 @@ Alternatively, to install requirements using pip:
 
 **Note**: For GPU compatibility, tensorflow 2.2.1 requires CUDA 10.1 and cuDNN >= 7.
 
-## Usage I: Construct Datasets for Training, Testing and Validation
+### 1. Construct Datasets for Training, Testing and Validation
 
 Clone and navigate to the Bichrom repository. 
 ```
@@ -68,7 +68,7 @@ optional arguments:
 
 **blacklist**: A blacklist BED file, with artifactual regions to be excluded from the training. For an example, please see: sample_data/mm10_blacklist.bed
 
-## Usage 2: Train and compare a sequence-only CNN-LSTM to Bichrom
+### 2. Train Bichrom
 
 ```
 cd trainNN  
