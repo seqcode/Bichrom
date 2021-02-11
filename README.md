@@ -99,7 +99,7 @@ optional arguments:
 
 ```
   
-### Required arguments**: 
+**Required arguments**: 
 
 **training_schema_yaml**: This YAML files contains paths to the formatted train, test and validation data. This file will be automatically generated using construct_data.py (**see above**).
 
