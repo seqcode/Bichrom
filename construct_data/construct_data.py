@@ -65,7 +65,7 @@ class AccessGenome:
         return ''.join(outp_str)
 
     def get_data_at_coordinates(self, coordinates_df, genome_fasta,
-                                window_len, chromatin_track_list):
+                                window_len, chromatin_track_list, nbins):
         """
         This method can be used either by:
         1. class ConstructSets: uses this method to return features and labels
@@ -78,6 +78,7 @@ class AccessGenome:
             The columns are: chr, start, stop, label
             genome_fasta (pyFasta npy record): Pyfasta pointer to the fasta file.
             window_len (int): length of windows used for training
+            nbins (int): number of bins for chromatin tracks
         Returns:
             This method returns a one hot encoded numpy array (X) and a np
             vector y.
@@ -98,7 +99,7 @@ class AccessGenome:
             fa_seq = genome_fasta[chrom][int(start):int(stop)]
             try:
                 for idx, bw_file in enumerate(bw_list):
-                    chromatin_out_lists[idx].append(bw_file.stats(chrom, start, stop, nBins=50))
+                    chromatin_out_lists[idx].append(bw_file.stats(chrom, start, stop, nBins=nbins))
             except RuntimeError:
                 print(
                     "Error while analyzing the BigWig file.\n"
@@ -126,7 +127,7 @@ class ConstructTrainingData(AccessGenome):
 
     def __init__(self, genome_sizes_file, genome_fasta_file, blacklist_file,
                  chip_coords, window_length, exclusion_df,
-                 curr_genome_bed, acc_regions_file, ratios, chromatin_track_list):
+                 curr_genome_bed, acc_regions_file, chromatin_track_list, nbins):
         super().__init__(genome_fasta_file)
         self.genome_sizes_file = genome_sizes_file
         self.blacklist_file = blacklist_file
@@ -136,8 +137,8 @@ class ConstructTrainingData(AccessGenome):
         self.curr_genome_bed = curr_genome_bed
         # self.curr_genome_bed is is a df, convert to a bdt obj.
         self.acc_regions_file = acc_regions_file
-        self.ratios = ratios  # list
         self.chromatin_track_list = chromatin_track_list
+        self.nbins = nbins
 
     def apply_random_shift(self, coords):
         """
@@ -189,7 +190,7 @@ class ConstructTrainingData(AccessGenome):
         # Then apply a random shift that returns 500 bp windows.
         # Create a BedTool object for further use.
         bound_sample_size = int(len(self.chip_coords))
-        bound_sample = self.chip_coords.sample(n=(bound_sample_size * 4), replace=True)
+        bound_sample = self.chip_coords.sample(n=(bound_sample_size * 5), replace=True)
         bound_sample_w_shift = self.apply_random_shift(bound_sample)
         bound_sample_bdt_obj = BedTool.from_dataframe(bound_sample_w_shift)
         bound_sample_w_shift['label'] = 1
@@ -248,7 +249,7 @@ class ConstructTrainingData(AccessGenome):
         #                                       g=self.genome_sizes_file,
         #                                       incl=regions_acc_bdt_obj.fn,
         #                                       excl=exclusion_bdt_obj)
-        unbound_acc_bdt_obj = BedTool().random(l=self.L, n=(bound_sample_size * 2),
+        unbound_acc_bdt_obj = BedTool().random(l=self.L, n=(bound_sample_size * 4),
                                                g=self.acc_regions_file)
         # unbound_acc_bdt_obj = unbound_acc_bdt_obj.intersect(regions_acc_bdt_obj)
         unbound_acc_bdt_obj = unbound_acc_bdt_obj.intersect(exclusion_bdt_obj, v=True)
@@ -273,14 +274,14 @@ class ConstructTrainingData(AccessGenome):
 
         X_seq, X_chromatin_list, y = super().get_data_at_coordinates(coordinates_df=coords_for_data,
                                                genome_fasta=genome_fasta,
-                                               window_len=self.L, chromatin_track_list=self.chromatin_track_list)
+                                               window_len=self.L, chromatin_track_list=self.chromatin_track_list,
+                                                                     nbins=self.nbins)
         return X_seq, X_chromatin_list, y, coords_for_data
 
 
 def construct_training_data(genome_sizes_file, peaks_file, genome_fasta_file,
                             blacklist_file, to_keep, to_filter,
-                            window_length, acc_regions_file,
-                            ratios, out_prefix, chromatin_track_list):
+                            window_length, acc_regions_file, out_prefix, chromatin_track_list, nbins):
     """
     This generator can either generate training data or validation data based on
     the to_keep and to_filter arguments.
@@ -325,8 +326,8 @@ def construct_training_data(genome_sizes_file, peaks_file, genome_fasta_file,
                                            window_length=window_length,
                                            curr_genome_bed=genome_bed_df,
                                            acc_regions_file=acc_regions_file,
-                                           ratios=ratios,
-                                           chromatin_track_list=chromatin_track_list)
+                                           chromatin_track_list=chromatin_track_list,
+                                           nbins=nbins)
 
     X_seq, X_chromatin_list, y, training_coords = construct_sets.get_data()
     # saving the data
@@ -341,7 +342,8 @@ def construct_training_data(genome_sizes_file, peaks_file, genome_fasta_file,
 class ConstructTestData(AccessGenome):
 
     def __init__(self, genome_fasta_file, genome_sizes_file, peaks_file,
-                 blacklist_file, window_len, stride, to_keep, chromatin_track_list):
+                 blacklist_file, window_len, stride, to_keep, chromatin_track_list,
+                 nbins):
         super().__init__(genome_fasta_file)
         self.genome_sizes_file = genome_sizes_file
         self.peaks_file = peaks_file
@@ -350,6 +352,7 @@ class ConstructTestData(AccessGenome):
         self.stride = stride
         self.to_keep = to_keep
         self.chromatin_track_list = chromatin_track_list
+        self.nbins = nbins
 
     def define_coordinates(self):
         """
@@ -426,17 +429,19 @@ class ConstructTestData(AccessGenome):
         # get the fasta file:
         genome_fasta = super().get_genome_fasta()
         X_seq, X_chromatin_list, y = super().get_data_at_coordinates(coordinates_df=test_coords, genome_fasta=genome_fasta,
-                                               window_len=self.window_len, chromatin_track_list=self.chromatin_track_list)
+                                               window_len=self.window_len, chromatin_track_list=self.chromatin_track_list,
+                                                                     nbins=self.nbins)
         return X_seq, X_chromatin_list, y, test_coords
 
 
 def construct_test_data(genome_sizes_file, peaks_file, genome_fasta_file,
-                        blacklist_file, to_keep, window_len, stride, out_prefix, chromatin_track_list):
+                        blacklist_file, to_keep, window_len, stride, out_prefix, chromatin_track_list,
+                        nbins):
 
     ts = ConstructTestData(genome_fasta_file=genome_fasta_file, genome_sizes_file=genome_sizes_file,
                            peaks_file=peaks_file, blacklist_file=blacklist_file,
                            window_len=window_len, stride=stride, to_keep=to_keep,
-                           chromatin_track_list=chromatin_track_list)
+                           chromatin_track_list=chromatin_track_list, nbins=nbins)
     X_seq, X_chromatin_list, y_test, test_coords = ts.get_data()
 
     # Saving the data
@@ -466,6 +471,9 @@ def main():
                         required=True)
     parser.add_argument('-o', '--outdir', help='Output directory for storing train, test data',
                         required=True)
+    parser.add_argument('-nbins', type=int, help='Number of bins for chromatin tracks',
+                        required=True)
+
     parser.add_argument('-blacklist', default=None, help='Optional, blacklist file for the genome of interest')
 
     args = parser.parse_args()
@@ -479,9 +487,10 @@ def main():
                                      blacklist_file=args.blacklist, window_length=args.len,
                                      acc_regions_file=args.acc_domains,
                                      to_filter=['chr17', 'chr11', 'chrM', 'chrUn'],
-                                     to_keep=None, ratios=[1, 1, 1, 1],
+                                     to_keep=None,
                                      out_prefix=args.outdir + '/data_train',
-                                     chromatin_track_list=args.chromtracks)
+                                     chromatin_track_list=args.chromtracks,
+                                     nbins=args.nbins)
 
     print('Constructing validation data ...')
     construct_test_data(genome_sizes_file=args.info, peaks_file=args.peaks,
@@ -490,7 +499,7 @@ def main():
                         stride=args.len,
                         to_keep=['chr11'],
                         out_prefix=args.outdir + '/data_val',
-                        chromatin_track_list=args.chromtracks)
+                        chromatin_track_list=args.chromtracks, nbins=args.nbins)
 
     print('Constructing test data ...')
     construct_test_data(genome_sizes_file=args.info, peaks_file=args.peaks,
@@ -499,7 +508,7 @@ def main():
                         stride=args.len,
                         to_keep=['chr17'],
                         out_prefix=args.outdir + '/data_test',
-                        chromatin_track_list=args.chromtracks)
+                        chromatin_track_list=args.chromtracks, nbins=args.nbins)
 
 
 if __name__ == "__main__":
