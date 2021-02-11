@@ -15,4 +15,7 @@ dependencies:
     - seaborn==0.9.1
     - tensorflow==2.2.1
     - tensorflow-estimator==2.2.0
+    - pybedtools=0.8.1
+    - pybigwig=0.3.18
+    - pyfasta=0.5.2
 prefix: env-bichrom
