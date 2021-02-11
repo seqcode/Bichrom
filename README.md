@@ -2,7 +2,9 @@
 Bichrom provides a framework for modeling, interpreting, and visualizing the joint sequence and chromatin landscapes that determine TF-DNA binding dynamics.
 
 ### Citation
-Srivastava, D., Aydin, B., Mazzoni, E.O. and Mahony, S., 2020. An interpretable bimodal neural network characterizes the sequence and preexisting chromatin predictors of induced TF binding. bioRxiv, p.672790.
+Srivastava, D., Aydin, B., Mazzoni, E.O. et al. An interpretable bimodal neural network characterizes the sequence and preexisting chromatin predictors of induced transcription factor binding. Genome Biol 22, 20 (2021). 
+https://doi.org/10.1186/s13059-020-02218-6
+
 
 ### Installation
 **Requirements**:  
@@ -14,9 +16,17 @@ We suggest using anaconda to create a virtual environment using the provided YAM
 Alternatively, to install requirements using pip: 
 `pip install -r requirements.txt`
 
+**Note**: Bichrom uses Pybedtools to construct genome-wide training, test and validation datasets. In order to use this functionality, you must have bedtools installed. To install bedtools, follow instructions here: https://bedtools.readthedocs.io/en/latest/content/installation.html 
+
 **Note**: For GPU compatibility, tensorflow 2.2.1 requires CUDA 10.1 and cuDNN >= 7.
 
 ### Usage
+
+Clone and navigate to the Bichrom repository. 
+
+**Step 1: Construct (a) Training Set, (b) Validation Set and (c) Test Set.**
+
+
 ```
 # Clone and navigate to the iTF repository. 
 cd trainNN  
