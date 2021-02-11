@@ -1,13 +1,12 @@
-## Bichrom: A bimodal neural network to predict TF binding using sequence and pre-existing chromatin track data
+## Bichrom
 Bichrom provides a framework for modeling, interpreting, and visualizing the joint sequence and chromatin landscapes that determine TF-DNA binding dynamics.
 
-### Citation
+## Citation
 Srivastava, D., Aydin, B., Mazzoni, E.O. et al. An interpretable bimodal neural network characterizes the sequence and preexisting chromatin predictors of induced transcription factor binding. Genome Biol 22, 20 (2021). 
 https://doi.org/10.1186/s13059-020-02218-6
 
 
-### Installation
-**Requirements**:  
+## Installation and Requirements 
 
 python >= 3.5  
 We suggest using anaconda to create a virtual environment using the provided YAML configuration file:
@@ -20,7 +19,7 @@ Alternatively, to install requirements using pip:
 
 **Note**: For GPU compatibility, tensorflow 2.2.1 requires CUDA 10.1 and cuDNN >= 7.
 
-### Usage
+## Usage
 
 Clone and navigate to the Bichrom repository. 
 
@@ -51,28 +50,26 @@ optional arguments:
                         Output directory for storing train, test data
 
 ```
-#### Input Descriptions
 
-*Required Arguments*
+### Required Arguments
 
-**-info** : This is a standard genome sizes file, recording the size of each chromosome. It contains 2 tab-separated columns containing the chromosome name and chromosome size. For an example, please see: sample_data/mm10.info. Genome sizes files are typically available from UCSC Genome Browser.
+**info** : This is a standard genome sizes file, recording the size of each chromosome. It contains 2 tab-separated columns containing the chromosome name and chromosome size. For an example, please see: sample_data/mm10.info. Genome sizes files are typically available from UCSC Genome Browser.
 
-**-fa**: This is a fasta file from which train, test and validation data should be constructed. 
+**fa**: This is a fasta file from which train, test and validation data should be constructed. 
 
-**-len**: Length of training, test and validation windows. (Recommended=500)
+**len**: Length of training, test and validation windows. (Recommended=500)
 
-**-acc_domains**: A BED file containing accessible domains. This will be used for sampling from accessible chromatin while constructing the training data. 
+**acc_domains**: A BED file containing accessible domains. This will be used for sampling from accessible chromatin while constructing the training data. 
 
-**-chromtracks**: One or more BigWig files representing the chromatin datasets to be used as predictors of TF binding. 
+**chromtracks**: One or more BigWig files representing the chromatin datasets to be used as predictors of TF binding. 
 
-**-peaks**: A ChIP-seq or ChIP-exo peaks file in the multiGPS file format. Each peak (line in file) is represented as chromosome:midpoint. For an example, please see: sample_data/Ascl1.events 
+**peaks**: A ChIP-seq or ChIP-exo peaks file in the multiGPS file format. Each peak (line in file) is represented as chromosome:midpoint. For an example, please see: sample_data/Ascl1.events 
 
-**-o**: Output directory for storing output train, test and validation datasets. 
+**o**: Output directory for storing output train, test and validation datasets. 
 
-*Optional Arguments*:
+### Optional Arguments
 
-
-**-blacklist**: A blacklist BED file, with artifactual regions to be excluded from the training. For an example, please see: sample_data/mm10_blacklist.bed
+**blacklist**: A blacklist BED file, with artifactual regions to be excluded from the training. For an example, please see: sample_data/mm10_blacklist.bed
 
 
 ```
