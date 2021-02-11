@@ -19,7 +19,10 @@ Alternatively, to install requirements using pip:
 
 **Note**: For GPU compatibility, tensorflow 2.2.1 requires CUDA 10.1 and cuDNN >= 7.
 
-### 1. Construct Datasets for Training, Testing and Validation
+### Usage
+
+
+#### Step 1. Construct Datasets for Training, Testing and Validation
 
 Clone and navigate to the Bichrom repository. 
 ```
@@ -48,7 +51,7 @@ optional arguments:
 
 ```
 
-### Required Arguments
+#### Required Arguments
 
 **info** : This is a standard genome sizes file, recording the size of each chromosome. It contains 2 tab-separated columns containing the chromosome name and chromosome size. For an example, please see: sample_data/mm10.info. Genome sizes files are typically available from UCSC Genome Browser.
 
@@ -64,11 +67,11 @@ optional arguments:
 
 **o**: Output directory for storing output train, test and validation datasets. 
 
-### Optional Arguments
+#### Optional Arguments
 
 **blacklist**: A blacklist BED file, with artifactual regions to be excluded from the training. For an example, please see: sample_data/mm10_blacklist.bed
 
-### 2. Train Bichrom
+#### Step 2. Train Bichrom
 
 ```
 cd trainNN  
