@@ -75,10 +75,12 @@ optional arguments:
 
 **blacklist**: A blacklist BED file, with artifactual regions to be excluded from the training. For an example, please see: sample_data/mm10_blacklist.bed
 
-This function will create train, test and validation datasets. In addition, this function will produce an output file called **bichrom.yaml**, which stores the paths to all formatted datasets: sequences, binned chromatin tracks and TF binding labels. 
+This function will create train, test and validation datasets.
+
+In addition, this function will produce an output file called **bichrom.yaml**, which stores the paths to all formatted datasets: sequences, binned chromatin tracks and TF binding labels. 
 
 
-**Train Bichrom**
+**Step 2: Train Bichrom**
 
 ```
 cd trainNN  
