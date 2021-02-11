@@ -135,7 +135,7 @@ def transfer(train_path, val_path, basemodel, model, steps_per_epoch,
     checkpointer = ModelCheckpoint(records_path + 'model_epoch{epoch}.hdf5',
                                    verbose=1, save_best_only=False)
 
-    hist = model.fit_generator(epochs=25, steps_per_epoch=steps_per_epoch,
+    hist = model.fit_generator(epochs=15, steps_per_epoch=steps_per_epoch,
                                generator=train_data_generator,
                                validation_data=validation_data,
                                callbacks=[precision_recall_history,

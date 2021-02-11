@@ -12,6 +12,7 @@ if __name__ == '__main__':
     parser.add_argument('-len', help='Size of genomic windows',
                         required=True, type=int)
     parser.add_argument('-outdir', required=True, help='Output directory')
+    parser.add_argument('-nbins', type=int, required=True, help='Number of bins')
     args = parser.parse_args()
 
     # load the yaml file with input data paths:
@@ -24,5 +25,5 @@ if __name__ == '__main__':
     outdir = args.outdir
     call(['mkdir', outdir])
 
-    train_bichrom(data_paths=data_paths, outdir=outdir, seq_len=args.window_size,
-                  bin_size=10)
+    train_bichrom(data_paths=data_paths, outdir=outdir, seq_len=args.len,
+                  bin_size=int(args.len/args.nbins))

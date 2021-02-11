@@ -22,6 +22,9 @@ from pybedtools import BedTool
 import pyBigWig
 import argparse
 from subprocess import call
+import yaml
+import subprocess
+import os
 
 # local imports
 import utils
@@ -478,9 +481,46 @@ def main():
 
     args = parser.parse_args()
 
-    call(['mkdir', args.outdir])
+    if args.outdir[0] == '/':
+        # The user has specified a full directory path for the output directory:
+        out_dir_path = args.outdir
+    elif args.outdir[0] == '~':
+        # The user has specified a full path starting with the home directory:
+        out_dir_path = args.outdir
+    elif args.outdir[0] == '.':
+        # The user has specified a relative path.
+        print("Please specify an absolute path for the output directory.")
+        print("Exiting..")
+        exit(1)
+    else:
+        # The user has specified an output directory within the current wd.
+        dir_path = subprocess.run(['pwd'], stdout=subprocess.PIPE)
+        # Specifying the full path in the yaml configuration file.
+        out_dir_path = (str(dir_path.stdout, 'utf-8')).rstrip() + '/' + args.outdir
 
-    print(args.chromtracks)
+    print('Creating output directory')
+    call(['mkdir', args.outdir])
+    print(out_dir_path)
+
+    print('Recording output paths')
+    # Produce a default yaml file recording the output
+    yml_training_schema = {'train': {'seq': out_dir_path + '/data_train.seq',
+                                     'labels': out_dir_path + '/data_train.labels',
+                                     'chromatin_tracks': [out_dir_path + '/data_train.' + x.split('.')[0] + '.chromatin'
+                                                          for x in args.chromtracks]},
+                           'val':   {'seq': out_dir_path + '/data_val.seq',
+                                     'labels': out_dir_path + '/data_val.labels',
+                                     'chromatin_tracks': [out_dir_path + '/data_train.' + x.split('.')[0] + '.chromatin'
+                                                          for x in args.chromtracks]},
+                           'test':  {'seq': out_dir_path + '/data_test.seq',
+                                     'labels': out_dir_path + '/data_test.labels',
+                                     'chromatin_tracks': [out_dir_path + '/data_train.' + x.split('.')[0] + '.chromatin'
+                                                          for x in args.chromtracks]}}
+
+    with open(args.outdir + '/bichrom.yaml', "w") as fp:
+        yaml.dump(yml_training_schema, fp)
+
+    exit()
     print('Constructing train data ...')
     coords = construct_training_data(genome_sizes_file=args.info, peaks_file=args.peaks,
                                      genome_fasta_file=args.fa,

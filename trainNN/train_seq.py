@@ -104,7 +104,7 @@ def train(model, train_path, val_path, steps_per_epoch, batch_size,
     # earlystop = EarlyStopping(monitor='val_loss', mode='min', verbose=1,
     #                           patience=5)
     # training the model..
-    hist = model.fit_generator(epochs=25, steps_per_epoch=steps_per_epoch,
+    hist = model.fit_generator(epochs=15, steps_per_epoch=steps_per_epoch,
                                generator=train_generator,
                                validation_data=validation_data,
                                callbacks=[precision_recall_history,
