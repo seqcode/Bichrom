@@ -400,13 +400,16 @@ class ConstructTestData(AccessGenome):
         blacklist_exclusion_windows = BedTool(self.blacklist_file)
         # intersecting
         unbound_data = test_bdt_obj.intersect(chip_peaks_bdt_obj, v=True)
-        unbound_data = unbound_data.intersect(blacklist_exclusion_windows,
-                                              v=True)
-        # i.e. if there is any overlap with chip_peaks, that window is not
-        # reported
-        # removing blacklist windows
-        bound_data = chip_peaks_bdt_obj.intersect(blacklist_exclusion_windows,
+        if self.blacklist_file is None:
+            bound_data = chip_peaks_bdt_obj
+        else:
+            unbound_data = unbound_data.intersect(blacklist_exclusion_windows,
                                                   v=True)
+            # i.e. if there is any overlap with chip_peaks, that window is not
+            # reported
+            # removing blacklist windows
+            bound_data = chip_peaks_bdt_obj.intersect(blacklist_exclusion_windows,
+                                                      v=True)
         # i.e. the entire 500 bp window is the positive window.
         # making data-frames
         bound_data_df = bound_data.to_dataframe()
@@ -478,6 +481,7 @@ def main():
                                      to_keep=None, ratios=[1, 1, 1, 1],
                                      out_prefix=args.outdir + '/data_train',
                                      chromatin_track_list=args.chromtracks)
+
     print('Constructing validation data ...')
     construct_test_data(genome_sizes_file=args.info, peaks_file=args.peaks,
                         genome_fasta_file=args.fa,
