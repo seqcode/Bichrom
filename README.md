@@ -87,9 +87,7 @@ optional arguments:
   -outdir OUTDIR        Output directory
 ```
   
-### Input Files: Description  
-
-**Required arguments**: 
+### Required arguments**: 
 
 * **training_schema_yaml**:
 This is a YAML file containing containing paths to the training data (sequence, preexisting chromatin and labels), validation data and test data. A sample YAML file can be found in trainNN/sample.yaml. The structure of the training_schema_yaml file should be as follows:  
