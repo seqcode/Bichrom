@@ -71,25 +71,23 @@ optional arguments:
 
 **blacklist**: A blacklist BED file, with artifactual regions to be excluded from the training. For an example, please see: sample_data/mm10_blacklist.bed
 
+**Step 2: Train and compare a sequence-only CNN-LSTM to Bichrom.**
 
 ```
-# Clone and navigate to the iTF repository. 
 cd trainNN  
 To view help:   
-python run_bichrom.py --help
-usage: run_bichrom.py [-h] training_schema_yaml window_size bin_size outdir
+python run_bichrom.py -h
+usage: run_bichrom.py [-h] -training_schema_yaml TRAINING_SCHEMA_YAML -len LEN
+                      -outdir OUTDIR
 
-Train and compare BichromSEQ and Bichrom
-
-positional arguments:
-  training_schema_yaml  YAML file with paths to train, test and val data
-  window_size           Size of genomic windows
-  bin_size              Size of bins for chromatin data
-  outdir                Output directory
+Train and compare Bichrom-SEQ and Bichrom
 
 optional arguments:
   -h, --help            show this help message and exit
-
+  -training_schema_yaml TRAINING_SCHEMA_YAML
+                        YAML file with paths to train, test and val data
+  -len LEN              Size of genomic windows
+  -outdir OUTDIR        Output directory
 ```
   
 ### Input Files: Description  
