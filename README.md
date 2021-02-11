@@ -8,8 +8,7 @@ https://doi.org/10.1186/s13059-020-02218-6
 
 ## Installation and Requirements 
 
-**Please Note**: This repository has been updated as of **02/11/2021** to allow for more readable and user-friendly input datasets.  
-
+**Please Note**: This repository has been updated as of **02/11/2021**. Input file formats have been modified to increase readability.   
 python >= 3.5  
 We suggest using anaconda to create a virtual environment using the provided YAML configuration file:
 `conda env create -f bichrom.yml`  
@@ -21,10 +20,10 @@ Alternatively, to install requirements using pip:
 
 **Note**: For GPU compatibility, tensorflow 2.2.1 requires CUDA 10.1 and cuDNN >= 7.
 
-### Usage
+## Usage
 
 
-**Step 1. Construct Bichrom Input Data**
+### Step 1 - Construct Bichrom Input Data
 
 Clone and navigate to the Bichrom repository. 
 ```
@@ -55,32 +54,44 @@ optional arguments:
 
 **Required Arguments**
 
-**info** : This is a standard genome sizes file, recording the size of each chromosome. It contains 2 tab-separated columns containing the chromosome name and chromosome size. For an example, please see: sample_data/mm10.info. Genome sizes files are typically available from UCSC Genome Browser.
+**info**:   
+This is a standard genome sizes file, recording the size of each chromosome. It contains 2 tab-separated columns containing the chromosome name and chromosome size.  
+For an example file, please see: `sample_data/mm10.info`.  
+Genome sizes files are typically available from the UCSC Genome Browser (https://genome.ucsc.edu)
 
-**fa**: This is a fasta file from which train, test and validation data should be constructed. 
+**fa**:  
+This is a fasta file from which train, test and validation data should be constructed. 
 
-**len**: Length of training, test and validation windows. (Recommended=500)
+**len**:  
+Length of training, test and validation windows. (**Recommended=500**)
 
-**acc_domains**: A BED file containing accessible domains. This will be used for sampling from accessible chromatin while constructing the training data. 
+**acc_domains**:   
+A BED file containing accessibility domains in the cell-type of interest. This will be used for sampling regions from accessible chromatin when constructing the Bichrom training data.  
+For an example file, please see: `sample_data/mES_atacseq_domains.bed`.
 
-**chromtracks**: One or more BigWig files representing the chromatin datasets to be used as predictors of TF binding. 
+**chromtracks**:   
+One or more BigWig files containing histone ChIP-seq or ATAC-seq data. 
 
-**peaks**: A ChIP-seq or ChIP-exo peaks file in the multiGPS file format. Each peak (line in file) is represented as chromosome:midpoint. For an example, please see: sample_data/Ascl1.events 
+**peaks**:  
+A ChIP-seq or ChIP-exo TF peaks in the multiGPS file format. Each peak is represented as **chromosome:midpoint**.  
+For an example file, please see: `sample_data/Ascl1.events`.
 
-**nbins**: The number of bins to use for binning the chromatin data. (Recommended=10-20. Note that with an increase in **nbins** (or decrease in bin size), the memory requirements will increase.)
+**nbins**:  
+The number of bins to use for binning the chromatin data. (**Recommended=10-20**. Note that with an increase in resolution and **nbins** (or decrease in bin size), the memory requirements will increase.)
 
-**o**: Output directory for storing output train, test and validation datasets. 
+**o**:   
+Output directory for storing output train, test and validation datasets. 
 
-#### Optional Arguments
+**blacklist** (optional):   
+A blacklist BED file, with artifactual regions to be excluded from the training.  
+For an example file, please see: `sample_data/mm10_blacklist.bed`.
 
-**blacklist**: A blacklist BED file, with artifactual regions to be excluded from the training. For an example, please see: sample_data/mm10_blacklist.bed
-
-This function will create train, test and validation datasets.
-
-In addition, this function will produce an output file called **bichrom.yaml**, which stores the paths to all formatted datasets: sequences, binned chromatin tracks and TF binding labels. 
+### Step 1 - Output 
+construct_data.py will produce train, test and validation datasets in the specified output directory.
+This function will also produce a configuration file called **bichrom.yaml**, which can be used as input to run Bichrom. This configuration file stores the paths to the created train, test and validation datasets. 
 
 
-**Step 2: Train Bichrom**
+### Step 2 - Train Bichrom
 
 ```
 cd trainNN  
@@ -103,16 +114,20 @@ optional arguments:
   
 **Required arguments**: 
 
-**training_schema_yaml**: This YAML files contains paths to the formatted train, test and validation data. This file will be automatically generated using construct_data.py (**see above**).
+**training_schema_yaml**:  
+This configuration files contains paths to the formatted train, test and validation data. This file will be automatically generated using construct_data.py (**see above - construct_data.py will output bichrom.yaml**).
 
-In order to construct the training data, we implement several strategies including over-sampling the negative training regions from accessible chromatin and from genomic regions flanking the TF binding sites (detailed in the paper). However, if you would like to construct training data using your own strategy, please input a custom YAML file here. 
+In order to construct the training data, we implement several sampling strategies including over-sampling the negative training regions from accessible chromatin and from genomic regions flanking the TF binding sites (detailed in the paper). However, if you would like to construct training data using your own strategy, please input a custom configuration file here. More details for custom configuration files can be found at the bottom of the README.  
 
-**len**: The size of genomic windows used for training, validation and testing. (Recommended: 500)
-**nbins**: The number of bins to use for binning the chromatin data. 
-**outdir**: Bichrom's output directory.
+**len**:  
+The size of genomic windows used for training, validation and testing. (Recommended: 500)
+**nbins**: 
+The number of bins to use for binning the chromatin data. 
+**outdir**: 
+Bichrom's output directory.
 
 
-### Description of Bichrom's Output Files
+### Step 2 - Description of Bichrom's Output
 Bichrom output directory. 
   * seqnet: 
     * records the validation loss and auPRC for each epoch the sequence-only network (Bichrom-SEQ).
@@ -134,7 +149,7 @@ Within each category, Bichrom expects **3 file types**:
 * Chromatin Files: 1 file per chromatin experiment. Each input chromatin file contains chromatin signal (binned at any resolution) over the input genomic windows.
 * Label File: This file contains binary labels associated with TF binding over the input genomic windows. 
 
-File paths to these files should be summarized in a configuration YAML file. For the structure of the YAML file, please see: sample_data/sample_config.yaml
+File paths to these files should be summarized in a configuration YAML file. For the structure of the YAML file, please see: sample_data/sample_custom_config.yaml
 
 
 ### 2-D Bichrom embeddings
