@@ -520,7 +520,6 @@ def main():
     with open(args.outdir + '/bichrom.yaml', "w") as fp:
         yaml.dump(yml_training_schema, fp)
 
-    exit()
     print('Constructing train data ...')
     coords = construct_training_data(genome_sizes_file=args.info, peaks_file=args.peaks,
                                      genome_fasta_file=args.fa,
