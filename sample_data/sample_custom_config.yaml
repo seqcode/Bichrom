@@ -1,0 +1,14 @@
+train:
+  seq: '/path/to/train/seq.txt'
+  labels: '/path/to/train/labels.txt'
+  chromatin_tracks: ['/path/to/train/atacseq.txt', ..., '/path/to/train/h3k27ac.txt']
+
+val:
+  seq: '/path/to/val/seq.txt'
+  labels: '/path/to/val/labels.txt'
+  chromatin_tracks: ['/path/to/val/atacseq.txt', ..., '/path/to/val/h3k27ac.txt']
+
+test:
+  seq: '/path/to/test/seq.txt'
+  labels: '/path/to/test/labels.txt'
+  chromatin_tracks: ['/path/to/val/atacseq.txt', ..., '/path/to/test/h3k27ac.txt']
