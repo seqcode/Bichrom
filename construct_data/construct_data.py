@@ -312,7 +312,7 @@ def construct_training_data(genome_sizes_file, peaks_file, genome_fasta_file,
                                                    to_filter=to_filter)
 
     # Loading the exclusion bed file (Blacklist + ChIP-seq peaks, use for constructing negative sets):
-    chipseq_exclusion_windows, exclusion_windows_bdt = utils.exclusion_regions(blacklist_file,
+    exclusion_windows_bdt = utils.exclusion_regions(blacklist_file,
                                                                                chip_seq_coordinates)
     exclusion_windows_df = exclusion_windows_bdt.to_dataframe()
 
@@ -453,8 +453,6 @@ def main():
                         required=True)
     parser.add_argument('-fa', help='The fasta file for the genome of interest',
                         required=True)
-    parser.add_argument('-blacklist', help='Blacklist file for the genome of interest',
-                        required=True)
     parser.add_argument('-len', help='Size of training, test and validation windows',
                         type=int, required=True)
     parser.add_argument('-acc_domains', help='Bed file with accessible domains',
@@ -465,6 +463,7 @@ def main():
                         required=True)
     parser.add_argument('-o', '--outdir', help='Output directory for storing train, test data',
                         required=True)
+    parser.add_argument('-blacklist', default=None, help='Optional, blacklist file for the genome of interest')
 
     args = parser.parse_args()
 
@@ -479,7 +478,6 @@ def main():
                                      to_keep=None, ratios=[1, 1, 1, 1],
                                      out_prefix=args.outdir + '/data_train',
                                      chromatin_track_list=args.chromtracks)
-
     print('Constructing validation data ...')
     construct_test_data(genome_sizes_file=args.info, peaks_file=args.peaks,
                         genome_fasta_file=args.fa,

@@ -154,8 +154,12 @@ def exclusion_regions(blacklist_file, chip_seq_data):
     temp_chip_file['start'] = temp_chip_file['start'] - 250
     temp_chip_file['end'] = temp_chip_file['end'] + 250
 
-    bound_exclusion_windows = BedTool.from_dataframe(temp_chip_file[['chr', 'start','end']])
-    blacklist_exclusion_windows = BedTool(blacklist_file)
-    exclusion_windows = BedTool.cat(
-        *[blacklist_exclusion_windows, bound_exclusion_windows])
-    return bound_exclusion_windows, exclusion_windows
+    if blacklist_file is None:
+        print('No blacklist file specified ...')
+        exclusion_windows = BedTool.from_dataframe(temp_chip_file[['chr', 'start','end']])
+    else:
+        bound_exclusion_windows = BedTool.from_dataframe(temp_chip_file[['chr', 'start','end']])
+        blacklist_exclusion_windows = BedTool(blacklist_file)
+        exclusion_windows = BedTool.cat(
+            *[blacklist_exclusion_windows, bound_exclusion_windows])
+    return exclusion_windows
