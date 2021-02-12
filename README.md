@@ -27,6 +27,9 @@ Alternatively, to install requirements using pip:
 
 Clone and navigate to the Bichrom repository. 
 ```
+# Activate conda environment 
+source activate bichrom
+
 cd construct data
 usage: construct_data.py [-h] -info INFO -fa FA -blacklist BLACKLIST -len LEN
                          -acc_domains ACC_DOMAINS -chromtracks CHROMTRACKS
@@ -120,7 +123,7 @@ This configuration files contains paths to the formatted train, test and validat
 In order to construct the training data, we implement several sampling strategies including over-sampling the negative training regions from accessible chromatin and from genomic regions flanking the TF binding sites (detailed in the paper). However, if you would like to construct training data using your own strategy, please input a custom configuration file here. More details for custom configuration files can be found at the bottom of the README.  
 
 **len**:  
-The size of genomic windows used for training, validation and testing. (Recommended: 500).   
+The size of genomic windows used for training, validation and testing. (Recommended: 500).    
 **nbins**:  
 The number of bins to use for binning the chromatin data.   
 **outdir**:   
@@ -146,8 +149,12 @@ If generating custom training data, please specify a custom YAML file for traini
 
 Within each category, Bichrom expects **3 file types**: 
 * Sequence File: This file contains sequence data (one training sequence of lenght L/line). Acceptable nucleotides: A, T, G, C, N. 
-* Chromatin Files: 1 file per chromatin experiment. Each input chromatin file contains chromatin signal (binned at any resolution) over the input genomic windows.
-* Label File: This file contains binary labels associated with TF binding over the input genomic windows. 
+For an example: see `custom_data_files/data_train.seq'.    
+* Chromatin Files: 1 file per chromatin experiment. Each input chromatin file contains chromatin signal (binned at any resolution) over the input genomic windows.    
+For an example: see `custom_data_files/data_train.mES_dnaseseq.chromatin` which is uses a window length= 500, nbins=20.
+* Label File: This file contains binary labels associated with TF binding over the input genomic windows.  
+For an example: see `custom_data_files/data_train.labels'
+
 
 File paths to these files should be summarized in a configuration YAML file. For the structure of the YAML file, please see:   `sample_data/sample_custom_config.yaml`
 
