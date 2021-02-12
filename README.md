@@ -149,11 +149,15 @@ If generating custom training data, please specify a custom YAML file for traini
 
 Within each category, Bichrom expects **3 file types**: 
 * Sequence File: This file contains sequence data (one training sequence of lenght L/line). Acceptable nucleotides: A, T, G, C, N. 
-For an example: see `custom_data_files/data_train.seq'.    
+For an example: see `custom_data_files/data_train.seq`.
+
+
 * Chromatin Files: 1 file per chromatin experiment. Each input chromatin file contains chromatin signal (binned at any resolution) over the input genomic windows.    
 For an example: see `custom_data_files/data_train.mES_dnaseseq.chromatin` which is uses a window length= 500, nbins=20.
+
+
 * Label File: This file contains binary labels associated with TF binding over the input genomic windows.  
-For an example: see `custom_data_files/data_train.labels'
+For an example: see `custom_data_files/data_train.labels`
 
 
 File paths to these files should be summarized in a configuration YAML file. For the structure of the YAML file, please see:   `sample_data/sample_custom_config.yaml`
