@@ -1,18 +1,12 @@
 test:
-  chromatin_tracks:
-  - /gpfs/group/sam77/default/lab/divyanshi/projects/test_bichrom_software/out_test/data_train.mES_dnaseseq.chromatin
-  - /gpfs/group/sam77/default/lab/divyanshi/projects/test_bichrom_software/out_test/data_train.mES_dnaseseq.chromatin
-  labels: /gpfs/group/sam77/default/lab/divyanshi/projects/test_bichrom_software/out_test/data_test.labels
-  seq: /gpfs/group/sam77/default/lab/divyanshi/projects/test_bichrom_software/out_test/data_test.seq
+  chromatin_tracks: [data_test.mES_dnaseseq.chromatin]
+  labels: data_test.labels
+  seq: data_test.seq
 train:
-  chromatin_tracks:
-  - /gpfs/group/sam77/default/lab/divyanshi/projects/test_bichrom_software/out_test/data_train.mES_dnaseseq.chromatin
-  - /gpfs/group/sam77/default/lab/divyanshi/projects/test_bichrom_software/out_test/data_train.mES_dnaseseq.chromatin
-  labels: /gpfs/group/sam77/default/lab/divyanshi/projects/test_bichrom_software/out_test/data_train.labels
-  seq: /gpfs/group/sam77/default/lab/divyanshi/projects/test_bichrom_software/out_test/data_train.seq
+  chromatin_tracks: [data_train.mES_dnaseseq.chromatin]
+  labels: data_train.labels
+  seq: data_train.seq
 val:
-  chromatin_tracks:
-  - /gpfs/group/sam77/default/lab/divyanshi/projects/test_bichrom_software/out_test/data_train.mES_dnaseseq.chromatin
-  - /gpfs/group/sam77/default/lab/divyanshi/projects/test_bichrom_software/out_test/data_train.mES_dnaseseq.chromatin
-  labels: /gpfs/group/sam77/default/lab/divyanshi/projects/test_bichrom_software/out_test/data_val.labels
-  seq: /gpfs/group/sam77/default/lab/divyanshi/projects/test_bichrom_software/out_test/data_val.seq
+  chromatin_tracks: [data_val.mES_dnaseseq.chromatin]
+  labels: data_val.labels
+  seq: data_val.seq
