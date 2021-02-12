@@ -120,11 +120,11 @@ This configuration files contains paths to the formatted train, test and validat
 In order to construct the training data, we implement several sampling strategies including over-sampling the negative training regions from accessible chromatin and from genomic regions flanking the TF binding sites (detailed in the paper). However, if you would like to construct training data using your own strategy, please input a custom configuration file here. More details for custom configuration files can be found at the bottom of the README.  
 
 **len**:  
-The size of genomic windows used for training, validation and testing. (Recommended: 500)
-**nbins**: 
-The number of bins to use for binning the chromatin data. 
-**outdir**: 
-Bichrom's output directory.
+The size of genomic windows used for training, validation and testing. (Recommended: 500).   
+**nbins**:  
+The number of bins to use for binning the chromatin data.   
+**outdir**:   
+Bichrom's output directory.  
 
 
 ### Step 2 - Description of Bichrom's Output
