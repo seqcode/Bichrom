@@ -510,11 +510,11 @@ def main():
                                                           for x in args.chromtracks]},
                            'val':   {'seq': out_dir_path + '/data_val.seq',
                                      'labels': out_dir_path + '/data_val.labels',
-                                     'chromatin_tracks': [out_dir_path + '/data_train.' + x.split('.')[0] + '.chromatin'
+                                     'chromatin_tracks': [out_dir_path + '/data_val.' + x.split('.')[0] + '.chromatin'
                                                           for x in args.chromtracks]},
                            'test':  {'seq': out_dir_path + '/data_test.seq',
                                      'labels': out_dir_path + '/data_test.labels',
-                                     'chromatin_tracks': [out_dir_path + '/data_train.' + x.split('.')[0] + '.chromatin'
+                                     'chromatin_tracks': [out_dir_path + '/data_test.' + x.split('.')[0] + '.chromatin'
                                                           for x in args.chromtracks]}}
 
     with open(args.outdir + '/bichrom.yaml', "w") as fp:
