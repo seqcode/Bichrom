@@ -336,7 +336,7 @@ def construct_training_data(genome_sizes_file, peaks_file, genome_fasta_file,
     # saving the data
     np.savetxt(out_prefix + '.seq', X_seq, fmt='%s')
     for idx, chromatin_track in enumerate(chromatin_track_list):
-        chromatin_out_files = [x.split('.')[0] for x in chromatin_track_list]
+        chromatin_out_files = [x.split('/')[-1].split('.')[0] for x in chromatin_track_list]
         np.savetxt(out_prefix + '.' + chromatin_out_files[idx] + '.chromatin', X_chromatin_list[idx], delimiter='\t', fmt='%1.3f')
     np.savetxt(out_prefix + '.labels', y, fmt='%s')
     return training_coords
@@ -450,7 +450,7 @@ def construct_test_data(genome_sizes_file, peaks_file, genome_fasta_file,
     # Saving the data
     np.savetxt(out_prefix + '.seq', X_seq, fmt='%s')
     for idx, chromatin_track in enumerate(chromatin_track_list):
-        chromatin_out_files = [x.split('.')[0] for x in chromatin_track_list]
+        chromatin_out_files = [x.split('/')[-1].split('.')[0] for x in chromatin_track_list]
         np.savetxt(out_prefix + '.' + chromatin_out_files[idx] + '.chromatin', X_chromatin_list[idx], delimiter='\t', fmt='%1.3f')
     np.savetxt(out_prefix + '.labels', y_test, fmt='%d')
     test_coords.to_csv(out_prefix + '.bed', sep='\t')
@@ -503,19 +503,25 @@ def main():
     print(out_dir_path)
 
     print('Recording output paths')
+
+    print([x.split('/')[-1].split('.')[0] for x in args.chromtracks])
+
     # Produce a default yaml file recording the output
     yml_training_schema = {'train': {'seq': out_dir_path + '/data_train.seq',
                                      'labels': out_dir_path + '/data_train.labels',
-                                     'chromatin_tracks': [out_dir_path + '/data_train.' + x.split('.')[0] + '.chromatin'
+                                     'chromatin_tracks': [out_dir_path + '/data_train.' + x.split('/')[-1].split('.')[0] + '.chromatin'
                                                           for x in args.chromtracks]},
                            'val':   {'seq': out_dir_path + '/data_val.seq',
                                      'labels': out_dir_path + '/data_val.labels',
-                                     'chromatin_tracks': [out_dir_path + '/data_val.' + x.split('.')[0] + '.chromatin'
+                                     'chromatin_tracks': [out_dir_path + '/data_val.' + x.split('/')[-1].split('.')[0] + '.chromatin'
                                                           for x in args.chromtracks]},
                            'test':  {'seq': out_dir_path + '/data_test.seq',
                                      'labels': out_dir_path + '/data_test.labels',
-                                     'chromatin_tracks': [out_dir_path + '/data_test.' + x.split('.')[0] + '.chromatin'
+                                     'chromatin_tracks': [out_dir_path + '/data_test.' + x.split('/')[-1].split('.')[0] + '.chromatin'
                                                           for x in args.chromtracks]}}
+
+    # Note: The x.split('/')[-1].split('.')[0] accounts for input chromatin bigwig files with
+    # associated directory paths
 
     with open(args.outdir + '/bichrom.yaml', "w") as fp:
         yaml.dump(yml_training_schema, fp)
