@@ -18,4 +18,5 @@ dependencies:
     - pybedtools==0.8.1
     - pybigwig==0.3.18
     - pyfasta==0.5.2
+    - pandas==0.25.3
 prefix: env-bichrom
