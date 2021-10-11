@@ -479,6 +479,10 @@ def main():
 
     parser.add_argument('-blacklist', default=None, help='Optional, blacklist file for the genome of interest')
 
+    parser.add_argument('-val_chroms', default='chr11', nargs='+', help='A list of chromosomes to use for the validation set.')
+
+    parser.add_argument('-test_chroms', default='chr17', nargs='+', help='A list of chromosomes to use for the test set')
+
     args = parser.parse_args()
 
     if args.outdir[0] == '/':
@@ -497,6 +501,16 @@ def main():
         dir_path = subprocess.run(['pwd'], stdout=subprocess.PIPE)
         # Specifying the full path in the yaml configuration file.
         out_dir_path = (str(dir_path.stdout, 'utf-8')).rstrip() + '/' + args.outdir
+
+    if len(set.intersection(set(args.val_chroms), set(['chrM', 'chrUn']))) or len(set.intersection(set(args.test_chroms), set(['chrM', 'chrUn']))) :
+        print("Validation and Test Sets must not use chrM, chrUn")
+        print("Exiting..")
+        exit(1)
+
+    if len(set.intersection(set(args.val_chroms), set(args.test_chroms))):
+        print("Validation and Test Sets must not have any intersection")
+        print("Exiting..")
+        exit(1)
 
     print('Creating output directory')
     call(['mkdir', args.outdir])
@@ -531,7 +545,7 @@ def main():
                                      genome_fasta_file=args.fa,
                                      blacklist_file=args.blacklist, window_length=args.len,
                                      acc_regions_file=args.acc_domains,
-                                     to_filter=['chr17', 'chr11', 'chrM', 'chrUn'],
+                                     to_filter=args.val_chroms + args.test_chroms + ['chrM', 'chrUn'],
                                      to_keep=None,
                                      out_prefix=args.outdir + '/data_train',
                                      chromatin_track_list=args.chromtracks,
@@ -542,7 +556,7 @@ def main():
                         genome_fasta_file=args.fa,
                         blacklist_file=args.blacklist, window_len=args.len,
                         stride=args.len,
-                        to_keep=['chr11'],
+                        to_keep=args.val_chroms,
                         out_prefix=args.outdir + '/data_val',
                         chromatin_track_list=args.chromtracks, nbins=args.nbins)
 
@@ -551,7 +565,7 @@ def main():
                         genome_fasta_file=args.fa,
                         blacklist_file=args.blacklist, window_len=args.len,
                         stride=args.len,
-                        to_keep=['chr17'],
+                        to_keep=args.test_chroms,
                         out_prefix=args.outdir + '/data_test',
                         chromatin_track_list=args.chromtracks, nbins=args.nbins)
 
