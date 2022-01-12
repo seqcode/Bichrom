@@ -42,7 +42,7 @@ def dna2onehot(dnaSeqs):
 def yaml2hdf5(yml, h5file):
 
     data = load(open(yml, 'r'), Loader = Loader)    # load yaml
-    h5 = h5py.File(h5file, 'a')    
+    h5 = h5py.File(h5file, 'a', libver='latest')    
 
     for sets in ["train", "val", "test"]:
 
@@ -69,6 +69,9 @@ def yaml2hdf5(yml, h5file):
         labels = np.loadtxt(data[f"{sets}"]["labels"], dtype=int)
         labels_ds = h5[f"{sets}"].create_dataset("labels", data=labels)
         labels_ds.attrs.create("src", data[f"{sets}"]["seq"])   # keep track of source file
+
+    h5.swmr_mode = True     # SWMR mode on
+    h5.close()
 
 def main():
     # load arguments
