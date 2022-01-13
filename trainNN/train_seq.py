@@ -18,8 +18,8 @@ def data_generator(h5file, path, batchsize, seqlen):
     else:
         train_generator = iterutils.train_generator
 
-    X = train_generator(path['seq'], batchsize, seqlen, 'seq', 'repeat')
-    y = train_generator(path['labels'], batchsize, seqlen, 'labels', 'repeat')
+    X = train_generator(h5file, path['seq'], batchsize, seqlen, 'seq', 'repeat')
+    y = train_generator(h5file, path['labels'], batchsize, seqlen, 'labels', 'repeat')
 
     while True:
         yield next(X), next(y)
