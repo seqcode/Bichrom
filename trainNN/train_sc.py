@@ -135,7 +135,7 @@ def transfer(h5file, train_path, val_path, basemodel, model, steps_per_epoch,
 
     # Get train and validation data
     train_data_generator = data_generator(h5file, train_path, batchsize, seqlen=seq_len, bin_size=bin_size)
-    val_data_generator = data_generator(h5file, val_path, 200000, seqlen=seq_len, bin_size=bin_size)
+    val_data_generator = data_generator(h5file, val_path, 20000, seqlen=seq_len, bin_size=bin_size)
     validation_data = next(val_data_generator)
     precision_recall_history = PrecisionRecall(validation_data)
     checkpointer = ModelCheckpoint(records_path + 'model_epoch{epoch}.hdf5',
