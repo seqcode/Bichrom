@@ -11,7 +11,6 @@ from tensorflow.keras.optimizers import Adam
 
 # local imports
 import iterutils
-from trainNN.iterutils import train_generator
 
 def data_generator(h5file, path, batchsize, seqlen):
     if h5file:
