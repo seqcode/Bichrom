@@ -11,9 +11,12 @@ import os
 import sys
 import h5py
 import numpy as np
-import pandas as pd
 
-from yaml import load, Loader
+from collections import defaultdict
+from yaml import load, dump, Loader, add_representer
+from yaml.representer import Representer
+
+add_representer(defaultdict, Representer.represent_dict)
 
 DNA2index = {
         "A": 0,
@@ -42,7 +45,9 @@ def dna2onehot(dnaSeqs):
 def yaml2hdf5(yml, h5file):
 
     data = load(open(yml, 'r'), Loader = Loader)    # load yaml
-    h5 = h5py.File(h5file, 'a', libver='latest')    
+    h5 = h5py.File(h5file, 'a', libver='latest')  
+
+    yaml_hdf5_schema = defaultdict(dict)
 
     for sets in ["train", "val", "test"]:
 
@@ -57,21 +62,29 @@ def yaml2hdf5(yml, h5file):
             seqs_onehot = dna2onehot(seqs)
         seq_ds = h5[f"{sets}"].create_dataset("seq", data=seqs_onehot, chunks=True)  # save
         seq_ds.attrs.create("src", data[f"{sets}"]["seq"])  # keep track of source file
+        yaml_hdf5_schema[f"{sets}"]["seq"] = f"{sets}/seq"
 
         # chromatin tracks
+        yaml_hdf5_schema[f"{sets}"]["chromatin_tracks"] = []
         for ct in data[f"{sets}"]["chromatin_tracks"]:
             ct_id = os.path.basename(ct).split(".")[1]  # get id
             f = np.loadtxt(ct)
             ct_ds = h5[f"{sets}/chromatin_tracks"].create_dataset(ct_id, data=f, chunks=True)
             ct_ds.attrs.create("src", ct)   # keep track of source file
+            yaml_hdf5_schema[f"{sets}"]["chromatin_tracks"].append(f"{sets}/chromatin_tracks/{ct_id}")
 
         # labels
         labels = np.loadtxt(data[f"{sets}"]["labels"], dtype=int)
         labels_ds = h5[f"{sets}"].create_dataset("labels", data=labels)
         labels_ds.attrs.create("src", data[f"{sets}"]["seq"])   # keep track of source file
+        yaml_hdf5_schema[f"{sets}"]["labels"] = f"{sets}/labels"
 
     h5.swmr_mode = True     # SWMR mode on
     h5.close()
+
+    # produce a new yaml file recording the path in HDF5 object
+    with open(yml.replace(".yaml", "_hdf5.yaml"), "w") as fp:
+        dump(yaml_hdf5_schema, fp)
 
 def main():
     # load arguments
