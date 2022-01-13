@@ -52,7 +52,7 @@ def assign_handler(dtype):
     return handler
 
 
-def train_generator(filename, batchsize, seqlen, dtype, iterflag):
+def train_generator(h5file, filename, batchsize, seqlen, dtype, iterflag):
     """ A generator to return a batch of training data, while iterating over the file in a loop. """
     handler = assign_handler(dtype)
     with open(filename, "r") as fp:
