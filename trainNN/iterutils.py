@@ -1,6 +1,7 @@
 """ Helper module with methods for one-hot sequence encoding and generators to
 to enable whole genome iteration """
 
+import h5py
 import numpy as np
 
 
@@ -73,3 +74,28 @@ def train_generator(filename, batchsize, seqlen, dtype, iterflag):
             else:
                 yield handler.map(buf, seqlen)
                 break
+
+def train_generator_h5(h5file, dspath, batchsize, seqlen, dtype, iterflag):
+    """ A generator to return a batch of training data, while iterating over the file in a loop. """
+    h5 = h5py.File(h5file, 'r', libver='latest', swmr=True)
+    ds = h5[dspath]
+    
+    start_index = 0
+    end_index = 0
+    while True:
+        start_index = end_index
+        end_index += batchsize
+        if end_index >= ds.shape[0]:
+            if iterflag == "repeat":
+                # reset
+                c1 = ds[start_index:(ds.shape[0])]
+                end_index = batchsize - c1.shape[0]
+                c2 = ds[0: end_index]
+                chunk = np.vstack([c1, c2]) if len(ds.shape)>1 \
+                    else np.concatenate([c1, c2])
+                yield chunk
+            else:
+                yield ds[start_index:(ds.shape)]
+                break
+        else:
+            yield ds[start_index:end_index]

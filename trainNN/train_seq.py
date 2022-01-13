@@ -1,3 +1,4 @@
+import h5py
 import numpy as np
 
 from sklearn.metrics import average_precision_score as auprc
@@ -9,12 +10,18 @@ from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.optimizers import Adam
 
 # local imports
-from iterutils import train_generator
+import iterutils
+from trainNN.iterutils import train_generator
 
+def data_generator(h5file, path, batchsize, seqlen):
+    if h5file:
+        train_generator = iterutils.train_generator_h5
+    else:
+        train_generator = iterutils.train_generator
 
-def data_generator(path, batchsize, seqlen):
     X = train_generator(path['seq'], batchsize, seqlen, 'seq', 'repeat')
     y = train_generator(path['labels'], batchsize, seqlen, 'labels', 'repeat')
+
     while True:
         yield next(X), next(y)
 
@@ -76,7 +83,7 @@ def save_metrics(hist_object, pr_history, records_path):
 
 
 # NOTE: ADDING A RECORDS PATH HERE!
-def train(model, train_path, val_path, steps_per_epoch, batch_size,
+def train(model, h5file, train_path, val_path, steps_per_epoch, batch_size,
           records_path):
     """
     Train the Keras graph model
@@ -92,8 +99,8 @@ def train(model, train_path, val_path, steps_per_epoch, batch_size,
     """
     adam = Adam(lr=0.001)
     model.compile(loss='binary_crossentropy', optimizer=adam)
-    train_generator = data_generator(train_path, batch_size, seqlen=500)
-    val_generator = data_generator(val_path, 200000, seqlen=500)
+    train_generator = data_generator(h5file, train_path, batch_size, seqlen=500)
+    val_generator = data_generator(h5file, val_path, 200000, seqlen=500)
 
     validation_data = next(val_generator)
     precision_recall_history = PrecisionRecall(validation_data)
@@ -115,16 +122,20 @@ def train(model, train_path, val_path, steps_per_epoch, batch_size,
     return loss, val_pr
 
 
-def build_and_train_net(hyperparams, train_path, val_path, batch_size,
+def build_and_train_net(hyperparams, h5file, train_path, val_path, batch_size,
                         records_path, seq_len):
 
     # Calculate size of training set
-    training_set_size = len(np.loadtxt(train_path['labels']))
+    if not h5file:
+        training_set_size = len(np.loadtxt(train_path['labels']))
+    else:
+        with h5py.File(h5file, 'r', libver='latest', swmr=True) as temp:
+            training_set_size = temp[train_path['labels']].shape[0]
     # Calculate the steps per epoch
     steps = training_set_size/batch_size
     model = build_model(params=hyperparams, seq_length=seq_len)
 
-    loss, val_pr = train(model, train_path=train_path, val_path=val_path,
+    loss, val_pr = train(model, h5file=h5file, train_path=train_path, val_path=val_path,
                          steps_per_epoch=steps, batch_size=batch_size,
                          records_path=records_path)
     return loss, val_pr

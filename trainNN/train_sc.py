@@ -1,3 +1,4 @@
+import h5py
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -11,10 +12,15 @@ from tensorflow.keras.callbacks import Callback
 from tensorflow.keras.callbacks import ModelCheckpoint
 import tensorflow.keras.backend as K
 
-from iterutils import train_generator
+import iterutils
 
 
-def data_generator(path, batchsize, seqlen, bin_size):
+def data_generator(h5file, path, batchsize, seqlen, bin_size):
+    if h5file:
+        train_generator = iterutils.train_generator_h5
+    else:
+        train_generator = iterutils.train_generator
+        
     dat_seq = train_generator(path['seq'], batchsize, seqlen, 'seq', 'repeat')
     dat_chromatin = []
     for chromatin_track in path['chromatin_tracks']:
@@ -101,7 +107,7 @@ def save_metrics(hist_object, pr_history, records_path):
     return loss, val_pr
 
 
-def transfer(train_path, val_path, basemodel, model, steps_per_epoch,
+def transfer(h5file, train_path, val_path, basemodel, model, steps_per_epoch,
              batchsize, records_path, bin_size, seq_len):
     """
     Trains the M-SC, transferring weights from the pre-trained M-SEQ.
@@ -128,8 +134,8 @@ def transfer(train_path, val_path, basemodel, model, steps_per_epoch,
     model.compile(loss='binary_crossentropy', optimizer=sgd)
 
     # Get train and validation data
-    train_data_generator = data_generator(train_path, batchsize, seqlen=seq_len, bin_size=bin_size)
-    val_data_generator = data_generator(val_path, 200000, seqlen=seq_len, bin_size=bin_size)
+    train_data_generator = data_generator(h5file, train_path, batchsize, seqlen=seq_len, bin_size=bin_size)
+    val_data_generator = data_generator(h5file, val_path, 200000, seqlen=seq_len, bin_size=bin_size)
     validation_data = next(val_data_generator)
     precision_recall_history = PrecisionRecall(validation_data)
     checkpointer = ModelCheckpoint(records_path + 'model_epoch{epoch}.hdf5',
@@ -146,16 +152,20 @@ def transfer(train_path, val_path, basemodel, model, steps_per_epoch,
     return loss, val_pr
 
 
-def transfer_and_train_msc(train_path, val_path, basemodel,
+def transfer_and_train_msc(h5file, train_path, val_path, basemodel,
                            batch_size, records_path, bin_size, seq_len):
 
-    # Calculate size of the training set:
-    training_set_size = len(np.loadtxt(train_path['labels']))
+     # Calculate size of training set
+    if not h5file:
+        training_set_size = len(np.loadtxt(train_path['labels']))
+    else:
+        with h5py.File(h5file, 'r', libver='latest', swmr=True) as temp:
+            training_set_size = temp[train_path['labels']].shape[0]
     # Calculate the steps per epoch
     steps_per_epoch = training_set_size / batch_size
     # Calculate number of chromatin tracks
     no_of_chrom_tracks = len(train_path['chromatin_tracks'])
     model = add_new_layers(basemodel, seq_len, no_of_chrom_tracks, bin_size)
-    loss, val_pr = transfer(train_path, val_path, basemodel, model, steps_per_epoch,
+    loss, val_pr = transfer(h5file, train_path, val_path, basemodel, model, steps_per_epoch,
                     batch_size, records_path, bin_size, seq_len)
     return loss, val_pr
