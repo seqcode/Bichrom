@@ -52,6 +52,9 @@ def test_on_batch(batch_generator, model, outfile, mode):
     Returns: None (Saves an output file with the probabilities for the test set )
     """
     counter = 0
+    # erase the contents in outfile
+    file = open(outfile, "w")
+    file.close()
     while True:
         try:
             [X_test, acc_test], y = next(batch_generator)
