@@ -29,7 +29,7 @@ def return_best_model(pr_vec, model_path):
     # define the model path (The model files are 1-based)
     model_file = model_path + 'model_epoch' + str(model_idx + 1) + '.hdf5'
     # load and return the selected model:
-    return load_model(model_file)
+    return model_file
 
 
 def run_seq_network(h5file, train_path, val_path, records_path, seq_len):
@@ -55,11 +55,11 @@ def run_seq_network(h5file, train_path, val_path, records_path, seq_len):
                                            records_path=records_path_seq,
                                            seq_len=seq_len)
     # choose the model with the lowest validation loss
-    model_seq = return_best_model(pr_vec=seq_val_pr, model_path=records_path_seq)
-    return model_seq
+    model_seq_path = return_best_model(pr_vec=seq_val_pr, model_path=records_path_seq)
+    return model_seq_path
 
 
-def run_bimodal_network(train_path, val_path, records_path, base_seq_model,
+def run_bimodal_network(h5file, train_path, val_path, records_path, base_seq_model_path,
                         bin_size, seq_len):
     """
     Train M-SC. (Model Definition in README)
@@ -96,14 +96,14 @@ def run_bimodal_network(train_path, val_path, records_path, base_seq_model,
 
 def train_bichrom(h5file, data_paths, outdir, seq_len, bin_size):
     # Train the sequence-only network (M-SEQ)
-    mseq = run_seq_network(h5file=h5file,  train_path=data_paths['train'], val_path=data_paths['val'],
+    mseq_path = run_seq_network(h5file=h5file,  train_path=data_paths['train'], val_path=data_paths['val'],
                            records_path=outdir, seq_len=seq_len)
 
     no_of_chromatin_tracks = len(data_paths['train']['chromatin_tracks'])
     # Train the bimodal network (M-SC)
-    msc = run_bimodal_network(h5file=h5file, train_path=data_paths['train'],
+    msc_path = run_bimodal_network(h5file=h5file, train_path=data_paths['train'],
                               val_path=data_paths['val'], records_path=outdir,
-                              base_seq_model=mseq, bin_size=bin_size, seq_len=seq_len)
+                              base_seq_model_path=mseq_path, bin_size=bin_size, seq_len=seq_len)
 
     # Evaluate both models on held-out test sets and plot metrics
     probas_out_seq = outdir + '/seqnet/' + 'test_probs.txt'
@@ -111,8 +111,10 @@ def train_bichrom(h5file, data_paths, outdir, seq_len, bin_size):
     records_file_path = outdir + '/metrics'
     print(records_file_path)
     # save the best msc model
-    msc.save(outdir + '/full_model.best.hdf5')
+    call(['cp', msc_path, outdir + '/full_model.best.hdf5'])
 
+    mseq = load_model(mseq_path)
+    msc = load_model(msc_path)
     evaluate_models(sequence_len=seq_len, h5file=h5file, path=data_paths['test'],
                     probas_out_seq=probas_out_seq, probas_out_sc=probas_out_sc,
                     model_seq=mseq, model_sc=msc,
