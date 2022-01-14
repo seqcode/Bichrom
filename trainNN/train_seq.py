@@ -9,6 +9,8 @@ from tensorflow.keras.callbacks import Callback
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.optimizers import Adam
 
+from tensorflow.distribute import MirroredStrategy
+
 # local imports
 import iterutils
 
@@ -52,20 +54,23 @@ def build_model(params, seq_length):
     Returns
         model (keras model): A keras model
     """
-    seq_input = Input(shape=(seq_length, 4,), name='seq')
-    xs = Conv1D(filters=params.n_filters,
-                kernel_size=params.filter_size,
-                activation='relu')(seq_input)
-    xs = BatchNormalization()(xs)
-    xs = MaxPooling1D(padding="same", strides=params.pooling_stride,
-                      pool_size=params.pooling_size)(xs)
-    xs = LSTM(32)(xs)
-    # adding a specified number of dense layers
-    for idx in range(params.dense_layers):
-        xs = Dense(params.dense_layer_size, activation='relu')(xs)
-        xs = Dropout(params.dropout)(xs)
-    result = Dense(1, activation='sigmoid')(xs)
-    model = Model(inputs=seq_input, outputs=result)
+    # MirroredStrategy to employ all available GPUs
+    mirrored_strategy = MirroredStrategy()
+    with mirrored_strategy.scope():
+        seq_input = Input(shape=(seq_length, 4,), name='seq')
+        xs = Conv1D(filters=params.n_filters,
+                    kernel_size=params.filter_size,
+                    activation='relu')(seq_input)
+        xs = BatchNormalization()(xs)
+        xs = MaxPooling1D(padding="same", strides=params.pooling_stride,
+                        pool_size=params.pooling_size)(xs)
+        xs = LSTM(32)(xs)
+        # adding a specified number of dense layers
+        for idx in range(params.dense_layers):
+            xs = Dense(params.dense_layer_size, activation='relu')(xs)
+            xs = Dropout(params.dropout)(xs)
+        result = Dense(1, activation='sigmoid')(xs)
+        model = Model(inputs=seq_input, outputs=result)
     return model
 
 
@@ -96,6 +101,7 @@ def train(model, h5file, train_path, val_path, steps_per_epoch, batch_size,
     Returns:
         loss (ndarray): An array with the validation loss at each epoch
     """
+    
     adam = Adam(lr=0.001)
     model.compile(loss='binary_crossentropy', optimizer=adam)
     train_generator = data_generator(h5file, train_path, batch_size, seqlen=500)

@@ -4,13 +4,15 @@ import pandas as pd
 import tensorflow as tf
 
 from sklearn.metrics import average_precision_score as auprc
-from tensorflow.keras.models import Model
+from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Dense, concatenate, Input, LSTM
 from tensorflow.keras.layers import Conv1D, Reshape, Lambda
 from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.callbacks import Callback
 from tensorflow.keras.callbacks import ModelCheckpoint
 import tensorflow.keras.backend as K
+
+from tensorflow.distribute import MirroredStrategy
 
 import iterutils
 
@@ -42,7 +44,7 @@ def data_generator(h5file, path, batchsize, seqlen, bin_size):
         yield [sequence_features, chromatin_features], labels
 
 
-def add_new_layers(base_model, seq_len, no_of_chromatin_tracks, bin_size):
+def add_new_layers(base_model_path, seq_len, no_of_chromatin_tracks, bin_size):
     """
     Takes a pre-existing M-SEQ (Definition in README) & adds structure to \
     use it as part of a bimodal DNA sequence + prior chromatin network
@@ -56,27 +58,31 @@ def add_new_layers(base_model, seq_len, no_of_chromatin_tracks, bin_size):
     def permute(x):
         return K.permute_dimensions(x, (0, 2, 1))
 
-    # Transfer from a pre-trained M-SEQ
-    curr_layer = base_model.get_layer(name='dense_2')
-    curr_tensor = curr_layer.output
-    xs = Dense(1, name='MSEQ-dense-new', activation='tanh')(curr_tensor)
+    mirrored_strategy = MirroredStrategy()
+    with mirrored_strategy.scope():
+        # load basemodel
+        base_model = load_model(base_model_path)
+        # Transfer from a pre-trained M-SEQ
+        curr_layer = base_model.get_layer(name='dense_2')
+        curr_tensor = curr_layer.output
+        xs = Dense(1, name='MSEQ-dense-new', activation='tanh')(curr_tensor)
 
-    # Defining a M-C sub-network
-    chrom_input = Input(shape=(no_of_chromatin_tracks * int(seq_len/bin_size),), name='chrom_input')
-    ci = Reshape((no_of_chromatin_tracks, int(seq_len/bin_size)),
-                 input_shape=(no_of_chromatin_tracks * int(seq_len/bin_size),))(chrom_input)
-    # Permuting the input dimensions to match Keras input requirements:
-    permute_func = Lambda(permute)
-    ci = permute_func(ci)
-    xc = Conv1D(15, 1, padding='valid', activation='relu', name='MC-conv1d')(ci)
-    xc = LSTM(5, activation='relu', name='MC-lstm')(xc)
-    xc = Dense(1, activation='tanh', name='MC-dense')(xc)
+        # Defining a M-C sub-network
+        chrom_input = Input(shape=(no_of_chromatin_tracks * int(seq_len/bin_size),), name='chrom_input')
+        ci = Reshape((no_of_chromatin_tracks, int(seq_len/bin_size)),
+                    input_shape=(no_of_chromatin_tracks * int(seq_len/bin_size),))(chrom_input)
+        # Permuting the input dimensions to match Keras input requirements:
+        permute_func = Lambda(permute)
+        ci = permute_func(ci)
+        xc = Conv1D(15, 1, padding='valid', activation='relu', name='MC-conv1d')(ci)
+        xc = LSTM(5, activation='relu', name='MC-lstm')(xc)
+        xc = Dense(1, activation='tanh', name='MC-dense')(xc)
 
-    # Concatenating sequence (MSEQ) and chromatin (MC) networks:
-    merged_layer = concatenate([xs, xc])
-    result = Dense(1, activation='sigmoid', name='MSC-dense')(merged_layer)
-    model = Model(inputs=[base_model.input, chrom_input], outputs=result)
-    return model
+        # Concatenating sequence (MSEQ) and chromatin (MC) networks:
+        merged_layer = concatenate([xs, xc])
+        result = Dense(1, activation='sigmoid', name='MSC-dense')(merged_layer)
+        model = Model(inputs=[base_model.input, chrom_input], outputs=result)
+    return model, base_model
 
 
 class PrecisionRecall(Callback):
@@ -152,7 +158,7 @@ def transfer(h5file, train_path, val_path, basemodel, model, steps_per_epoch,
     return loss, val_pr
 
 
-def transfer_and_train_msc(h5file, train_path, val_path, basemodel,
+def transfer_and_train_msc(h5file, train_path, val_path, base_model_path,
                            batch_size, records_path, bin_size, seq_len):
 
      # Calculate size of training set
@@ -165,7 +171,7 @@ def transfer_and_train_msc(h5file, train_path, val_path, basemodel,
     steps_per_epoch = training_set_size / batch_size
     # Calculate number of chromatin tracks
     no_of_chrom_tracks = len(train_path['chromatin_tracks'])
-    model = add_new_layers(basemodel, seq_len, no_of_chrom_tracks, bin_size)
+    model, basemodel = add_new_layers(base_model_path, seq_len, no_of_chrom_tracks, bin_size)
     loss, val_pr = transfer(h5file, train_path, val_path, basemodel, model, steps_per_epoch,
                     batch_size, records_path, bin_size, seq_len)
     return loss, val_pr
