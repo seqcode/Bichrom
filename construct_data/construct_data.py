@@ -102,7 +102,10 @@ class AccessGenome:
             fa_seq = genome_fasta[chrom][int(start):int(stop)]
             try:
                 for idx, bw_file in enumerate(bw_list):
-                    chromatin_out_lists[idx].append(bw_file.stats(chrom, start, stop, nBins=nbins))
+                    m = np.nan_to_num(bw_file.values(chrom, start, stop)
+                        ).reshape((nbins, -1)
+                        ).mean(axis=1)
+                    chromatin_out_lists[idx].append(m)
             except RuntimeError:
                 print(
                     "Error while analyzing the BigWig file.\n"
@@ -281,7 +284,6 @@ class ConstructTrainingData(AccessGenome):
                                                                      nbins=self.nbins)
         return X_seq, X_chromatin_list, y, coords_for_data
 
-
 def construct_training_data(genome_sizes_file, peaks_file, genome_fasta_file,
                             blacklist_file, to_keep, to_filter,
                             window_length, acc_regions_file, out_prefix, chromatin_track_list, nbins):
@@ -436,7 +438,6 @@ class ConstructTestData(AccessGenome):
                                                                      nbins=self.nbins)
         return X_seq, X_chromatin_list, y, test_coords
 
-
 def construct_test_data(genome_sizes_file, peaks_file, genome_fasta_file,
                         blacklist_file, to_keep, window_len, stride, out_prefix, chromatin_track_list,
                         nbins):
@@ -526,25 +527,25 @@ def main():
     with open(args.outdir + '/bichrom.yaml', "w") as fp:
         yaml.dump(yml_training_schema, fp)
 
-    print('Constructing train data ...')
-    coords = construct_training_data(genome_sizes_file=args.info, peaks_file=args.peaks,
-                                     genome_fasta_file=args.fa,
-                                     blacklist_file=args.blacklist, window_length=args.len,
-                                     acc_regions_file=args.acc_domains,
-                                     to_filter=['chr17', 'chr11', 'chrM', 'chrUn'],
-                                     to_keep=None,
-                                     out_prefix=args.outdir + '/data_train',
-                                     chromatin_track_list=args.chromtracks,
-                                     nbins=args.nbins)
-
-    print('Constructing validation data ...')
-    construct_test_data(genome_sizes_file=args.info, peaks_file=args.peaks,
-                        genome_fasta_file=args.fa,
-                        blacklist_file=args.blacklist, window_len=args.len,
-                        stride=args.len,
-                        to_keep=['chr11'],
-                        out_prefix=args.outdir + '/data_val',
-                        chromatin_track_list=args.chromtracks, nbins=args.nbins)
+#    print('Constructing train data ...')
+#    coords = construct_training_data(genome_sizes_file=args.info, peaks_file=args.peaks,
+#                                     genome_fasta_file=args.fa,
+#                                     blacklist_file=args.blacklist, window_length=args.len,
+#                                     acc_regions_file=args.acc_domains,
+#                                     to_filter=['chr17', 'chr11', 'chrM', 'chrUn'],
+#                                     to_keep=None,
+#                                     out_prefix=args.outdir + '/data_train',
+#                                     chromatin_track_list=args.chromtracks,
+#                                     nbins=args.nbins)
+#
+#    print('Constructing validation data ...')
+#    construct_test_data(genome_sizes_file=args.info, peaks_file=args.peaks,
+#                        genome_fasta_file=args.fa,
+#                        blacklist_file=args.blacklist, window_len=args.len,
+#                        stride=args.len,
+#                        to_keep=['chr11'],
+#                        out_prefix=args.outdir + '/data_val',
+#                        chromatin_track_list=args.chromtracks, nbins=args.nbins)
 
     print('Constructing test data ...')
     construct_test_data(genome_sizes_file=args.info, peaks_file=args.peaks,
