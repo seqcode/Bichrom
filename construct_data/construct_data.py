@@ -65,7 +65,7 @@ class AccessGenome:
         outp_str = list()
         for nucl in inp_str:
             outp_str.append(rc_dict[nucl])
-        return ''.join(outp_str)
+        return ''.join(outp_str)[::-1]
 
     def get_data_at_coordinates(self, coordinates_df, genome_fasta,
                                 window_len, chromatin_track_list, nbins):
