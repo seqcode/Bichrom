@@ -68,7 +68,7 @@ class AccessGenome:
         return ''.join(outp_str)[::-1]
 
     def get_data_at_coordinates(self, coordinates_df, genome_fasta,
-                                window_len, chromatin_track_list, nbins):
+                                window_len, chromatin_track_list, nbins, reverse=False):
         """
         This method can be used either by:
         1. class ConstructSets: uses this method to return features and labels
@@ -99,12 +99,13 @@ class AccessGenome:
         batch_size = len(y)
         idx = 0
         for chrom, start, stop, lab in coordinates_df.values:
-            fa_seq = genome_fasta[chrom][int(start):int(stop)]
             try:
                 for idx, bw_file in enumerate(bw_list):
                     m = np.nan_to_num(bw_file.values(chrom, start, stop)
                         ).reshape((nbins, -1)
                         ).mean(axis=1)
+                    if reverse:
+                        m = m[::-1]
                     chromatin_out_lists[idx].append(m)
             except RuntimeError:
                 print(
@@ -114,11 +115,12 @@ class AccessGenome:
                     "data is aligned. \n"
                     "-> It is possible that chromosome names are different in these file types")
                 exit(1)
-            # Adding reverse complements into the training process:
-            if idx <= int(batch_size/2):
-                X_seq.append(fa_seq)
-            else:
-                X_seq.append(self.rev_comp(fa_seq))
+
+            # Adding reverse complements into the training process if need:
+            fa_seq = genome_fasta[chrom][int(start):int(stop)]
+            if reverse:
+                fa_seq = self.rev_comp(fa_seq)
+            X_seq.append(fa_seq)
             idx += 1
             seq_len.append(len(fa_seq))
         return X_seq, chromatin_out_lists, y
@@ -278,10 +280,23 @@ class ConstructTrainingData(AccessGenome):
         # get the fasta file:
         genome_fasta = super(ConstructTrainingData, self).get_genome_fasta()
 
-        X_seq, X_chromatin_list, y = super().get_data_at_coordinates(coordinates_df=coords_for_data,
+        X_seq_f, X_chromatin_list_f, y_f = super().get_data_at_coordinates(coordinates_df=coords_for_data,
                                                genome_fasta=genome_fasta,
-                                               window_len=self.L, chromatin_track_list=self.chromatin_track_list,
-                                                                     nbins=self.nbins)
+                                               window_len=self.L, 
+                                               chromatin_track_list=self.chromatin_track_list,
+                                               nbins=self.nbins,
+                                               reverse=False)
+        X_seq_r, X_chromatin_list_r, y_r = super().get_data_at_coordinates(coordinates_df=coords_for_data,
+                                               genome_fasta=genome_fasta,
+                                               window_len=self.L, 
+                                               chromatin_track_list=self.chromatin_track_list,
+                                               nbins=self.nbins,
+                                               reverse=True)
+        X_seq = X_seq_f + X_seq_r
+        X_chromatin_list = []
+        for idx in range(len(self.chromatin_track_list)):
+            X_chromatin_list.append(X_chromatin_list_f[idx] + X_chromatin_list_r[idx])
+        y = pd.concat([y_f, y_r])
         return X_seq, X_chromatin_list, y, coords_for_data
 
 def construct_training_data(genome_sizes_file, peaks_file, genome_fasta_file,
@@ -433,9 +448,12 @@ class ConstructTestData(AccessGenome):
         test_coords = self.define_coordinates()
         # get the fasta file:
         genome_fasta = super().get_genome_fasta()
-        X_seq, X_chromatin_list, y = super().get_data_at_coordinates(coordinates_df=test_coords, genome_fasta=genome_fasta,
-                                               window_len=self.window_len, chromatin_track_list=self.chromatin_track_list,
-                                                                     nbins=self.nbins)
+        X_seq, X_chromatin_list, y = super().get_data_at_coordinates(coordinates_df=test_coords, 
+                                                                     genome_fasta=genome_fasta,
+                                                                     window_len=self.window_len, 
+                                                                     chromatin_track_list=self.chromatin_track_list,
+                                                                     nbins=self.nbins, 
+                                                                     reverse=False)
         return X_seq, X_chromatin_list, y, test_coords
 
 def construct_test_data(genome_sizes_file, peaks_file, genome_fasta_file,
@@ -527,25 +545,25 @@ def main():
     with open(args.outdir + '/bichrom.yaml', "w") as fp:
         yaml.dump(yml_training_schema, fp)
 
-#    print('Constructing train data ...')
-#    coords = construct_training_data(genome_sizes_file=args.info, peaks_file=args.peaks,
-#                                     genome_fasta_file=args.fa,
-#                                     blacklist_file=args.blacklist, window_length=args.len,
-#                                     acc_regions_file=args.acc_domains,
-#                                     to_filter=['chr17', 'chr11', 'chrM', 'chrUn'],
-#                                     to_keep=None,
-#                                     out_prefix=args.outdir + '/data_train',
-#                                     chromatin_track_list=args.chromtracks,
-#                                     nbins=args.nbins)
-#
-#    print('Constructing validation data ...')
-#    construct_test_data(genome_sizes_file=args.info, peaks_file=args.peaks,
-#                        genome_fasta_file=args.fa,
-#                        blacklist_file=args.blacklist, window_len=args.len,
-#                        stride=args.len,
-#                        to_keep=['chr11'],
-#                        out_prefix=args.outdir + '/data_val',
-#                        chromatin_track_list=args.chromtracks, nbins=args.nbins)
+    print('Constructing train data ...')
+    coords = construct_training_data(genome_sizes_file=args.info, peaks_file=args.peaks,
+                                     genome_fasta_file=args.fa,
+                                     blacklist_file=args.blacklist, window_length=args.len,
+                                     acc_regions_file=args.acc_domains,
+                                     to_filter=['chr17', 'chr11', 'chrM', 'chrUn'],
+                                     to_keep=None,
+                                     out_prefix=args.outdir + '/data_train',
+                                     chromatin_track_list=args.chromtracks,
+                                     nbins=args.nbins)
+
+    print('Constructing validation data ...')
+    construct_test_data(genome_sizes_file=args.info, peaks_file=args.peaks,
+                        genome_fasta_file=args.fa,
+                        blacklist_file=args.blacklist, window_len=args.len,
+                        stride=args.len,
+                        to_keep=['chr11'],
+                        out_prefix=args.outdir + '/data_val',
+                        chromatin_track_list=args.chromtracks, nbins=args.nbins)
 
     print('Constructing test data ...')
     construct_test_data(genome_sizes_file=args.info, peaks_file=args.peaks,
