@@ -1,4 +1,6 @@
 import argparse
+from asyncio import subprocess
+from json import load
 import numpy as np
 import yaml
 from subprocess import call
@@ -79,8 +81,8 @@ def run_bimodal_network(train_path, val_path, records_path, base_seq_model,
     curr_params = Params()
 
     # train the network
-    loss, bimodal_val_pr = transfer_and_train_msc(train_path, val_path,
-                                                  base_seq_model,
+    loss, bimodal_val_pr = transfer_and_train_msc(h5file, train_path, val_path,
+                                                  base_seq_model_path,
                                                   batch_size=curr_params.batchsize,
                                                   records_path=records_path_sc,
                                                   bin_size=bin_size,

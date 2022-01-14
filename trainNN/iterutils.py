@@ -77,25 +77,27 @@ def train_generator(h5file, filename, batchsize, seqlen, dtype, iterflag):
 
 def train_generator_h5(h5file, dspath, batchsize, seqlen, dtype, iterflag):
     """ A generator to return a batch of training data, while iterating over the file in a loop. """
-    h5 = h5py.File(h5file, 'r', libver='latest', swmr=True)
-    ds = h5[dspath]
-    
-    start_index = 0
-    end_index = 0
-    while True:
-        start_index = end_index
-        end_index += batchsize
-        if end_index >= ds.shape[0]:
-            if iterflag == "repeat":
-                # reset
-                c1 = ds[start_index:(ds.shape[0])]
-                end_index = batchsize - c1.shape[0]
-                c2 = ds[0: end_index]
-                chunk = np.vstack([c1, c2]) if len(ds.shape)>1 \
-                    else np.concatenate([c1, c2])
-                yield chunk
+    with h5py.File(h5file, 'r', libver='latest', swmr=True) as h5:
+        ds = h5[dspath][:]
+        num_samples = ds.shape[0]
+        dim = len(ds.shape)
+        
+        start_index = 0
+        end_index = 0
+        while True:
+            start_index = end_index
+            end_index += batchsize
+            if end_index >= num_samples:
+                if iterflag == "repeat":
+                    # reset
+                    c1 = ds[start_index:num_samples]
+                    end_index = batchsize - c1.shape[0]
+                    c2 = ds[0: end_index]
+                    chunk = np.vstack([c1, c2]) if dim>1 \
+                        else np.concatenate([c1, c2])
+                    yield chunk
+                else:
+                    yield ds[start_index:num_samples]
+                    break
             else:
-                yield ds[start_index:(ds.shape)]
-                break
-        else:
-            yield ds[start_index:end_index]
+                yield ds[start_index:end_index]

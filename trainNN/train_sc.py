@@ -21,12 +21,12 @@ def data_generator(h5file, path, batchsize, seqlen, bin_size):
     else:
         train_generator = iterutils.train_generator
         
-    dat_seq = train_generator(path['seq'], batchsize, seqlen, 'seq', 'repeat')
+    dat_seq = train_generator(h5file, path['seq'], batchsize, seqlen, 'seq', 'repeat')
     dat_chromatin = []
     for chromatin_track in path['chromatin_tracks']:
         dat_chromatin.append(
-            train_generator(chromatin_track, batchsize, seqlen, 'chrom', 'repeat'))
-    y = train_generator(path['labels'], batchsize, seqlen, 'labels', 'repeat')
+            train_generator(h5file, chromatin_track, batchsize, seqlen, 'chrom', 'repeat'))
+    y = train_generator(h5file, path['labels'], batchsize, seqlen, 'labels', 'repeat')
     while True:
         combined_chrom_data = []
         for chromatin_track_generators in dat_chromatin:
