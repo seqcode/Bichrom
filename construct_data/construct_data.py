@@ -24,7 +24,8 @@ import argparse
 from subprocess import call
 import yaml
 import subprocess
-import os
+import logging
+logging.basicConfig(level = logging.INFO)
 
 # local imports
 import utils
@@ -274,9 +275,64 @@ class ConstructTrainingData(AccessGenome):
         training_coords = training_coords.sample(frac=1)
         return training_coords
 
+    def define_coordinates_new(self):
+        """
+        Use the chip-seq peak file and the blacklist files to define a bound
+        set and an unbound set of sites. The ratio of bound to unbound is 1:N,
+        but can be controlled using the parameter "ratio".
+        The unbound/negative set is chosen randomly from the genome.(ha)
+        """
+        # POS. SAMPLES
+        # Take a sample from the chip_coords file,
+        # Then apply a random shift that returns 500 bp windows.
+        # Create a BedTool object for further use.
+        bound_sample_size = int(len(self.chip_coords))
+        bound_sample = self.chip_coords.sample(n=(bound_sample_size * 5), replace=True)
+        bound_sample_w_shift = self.apply_random_shift(bound_sample)
+        bound_sample_bdt_obj = BedTool.from_dataframe(bound_sample_w_shift)
+        bound_sample_w_shift['label'] = 1
+        # Compute the proportion of positive samples falling in accessble region
+        regions_acc_bdt_obj = BedTool(self.acc_regions_file)
+        bound_sample_acc = bound_sample_bdt_obj.intersect(regions_acc_bdt_obj, wa=True)
+        bound_sample_inacc = bound_sample_bdt_obj.intersect(regions_acc_bdt_obj, wa=True, v=True)
+        
+        logging.info(f"# Bound samples in accessible region: {bound_sample_acc.count()}")
+        logging.info(f"# Bound samples NOT in accessible region: {bound_sample_inacc.count()}")
+
+        # NEG. SAMPLES
+        # note: the self.curr_genome_bed.fn contains only training chromosomes.
+        # NEG. SAMPLES: ACCESSIBLE
+        unbound_acc_bdt_obj = bound_sample_acc.shuffle(chrom=True,
+                                                        g=self.genome_sizes_file,
+                                                        incl=self.acc_regions_file)
+        unbound_acc_df = unbound_acc_bdt_obj.to_dataframe()[['chrom', 'start', 'end']]
+        unbound_acc_df.columns = ['chr', 'start', 'end']
+        unbound_acc_df['label'] = 0
+
+        logging.info(f"# Unbound accessible sample: {unbound_acc_bdt_obj.count()}")
+
+        # NEG. SAMPLES: INACCESSIBLE
+        unbound_inacc_bdt_obj = bound_sample_inacc.shuffle(chrom=True,
+                                                        g=self.genome_sizes_file,
+                                                        excl=self.acc_regions_file)
+        unbound_inacc_df = unbound_inacc_bdt_obj.to_dataframe()[['chrom', 'start', 'end']]
+        unbound_inacc_df.columns = ['chr', 'start', 'end']
+        unbound_inacc_df['label'] = 0
+
+        logging.info(f"# Unbound inaccessible sample: {unbound_inacc_bdt_obj.count()}")
+
+        # Sizes of each set in this training construction are already accounted for.
+        training_coords = pd.concat([bound_sample_w_shift, unbound_acc_df, unbound_inacc_df])
+
+        training_coords = training_coords[(training_coords['end'] - training_coords['start'] == 500)]
+
+        # randomly shuffle the dataFrame
+        training_coords = training_coords.sample(frac=1)
+        return training_coords
+
     def get_data(self):
         # get mini-batch co-ordinates:
-        coords_for_data = self.define_coordinates()
+        coords_for_data = self.define_coordinates_new()
         # get the fasta file:
         genome_fasta = super(ConstructTrainingData, self).get_genome_fasta()
 
@@ -356,6 +412,7 @@ def construct_training_data(genome_sizes_file, peaks_file, genome_fasta_file,
         chromatin_out_files = [x.split('/')[-1].split('.')[0] for x in chromatin_track_list]
         np.savetxt(out_prefix + '.' + chromatin_out_files[idx] + '.chromatin', X_chromatin_list[idx], delimiter='\t', fmt='%1.3f')
     np.savetxt(out_prefix + '.labels', y, fmt='%s')
+    training_coords.to_csv(out_prefix + '.coords', index=False, sep="\t")
     return training_coords
 
 
@@ -472,7 +529,6 @@ def construct_test_data(genome_sizes_file, peaks_file, genome_fasta_file,
         chromatin_out_files = [x.split('/')[-1].split('.')[0] for x in chromatin_track_list]
         np.savetxt(out_prefix + '.' + chromatin_out_files[idx] + '.chromatin', X_chromatin_list[idx], delimiter='\t', fmt='%1.3f')
     np.savetxt(out_prefix + '.labels', y_test, fmt='%d')
-    test_coords.to_csv(out_prefix + '.bed', sep='\t')
     return test_coords
 
 
