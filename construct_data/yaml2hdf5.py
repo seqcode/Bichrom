@@ -60,7 +60,7 @@ def yaml2hdf5(yml, h5file):
             for line in f:
                 seqs.append(line.strip())
             seqs_onehot = dna2onehot(seqs)
-        seq_ds = h5[f"{sets}"].create_dataset("seq", data=seqs_onehot, chunks=True)  # save
+        seq_ds = h5[f"{sets}"].create_dataset("seq", data=seqs_onehot, chunks=True, compression="gzip")  # save
         seq_ds.attrs.create("src", data[f"{sets}"]["seq"])  # keep track of source file
         yaml_hdf5_schema[f"{sets}"]["seq"] = f"{sets}/seq"
 
@@ -69,13 +69,13 @@ def yaml2hdf5(yml, h5file):
         for ct in data[f"{sets}"]["chromatin_tracks"]:
             ct_id = os.path.basename(ct).split(".")[1]  # get id
             f = np.loadtxt(ct)
-            ct_ds = h5[f"{sets}/chromatin_tracks"].create_dataset(ct_id, data=f, chunks=True)
+            ct_ds = h5[f"{sets}/chromatin_tracks"].create_dataset(ct_id, data=f, chunks=True, compression="gzip")
             ct_ds.attrs.create("src", ct)   # keep track of source file
             yaml_hdf5_schema[f"{sets}"]["chromatin_tracks"].append(f"{sets}/chromatin_tracks/{ct_id}")
 
         # labels
         labels = np.loadtxt(data[f"{sets}"]["labels"], dtype=int)
-        labels_ds = h5[f"{sets}"].create_dataset("labels", data=labels)
+        labels_ds = h5[f"{sets}"].create_dataset("labels", data=labels, compression="gzip")
         labels_ds.attrs.create("src", data[f"{sets}"]["seq"])   # keep track of source file
         yaml_hdf5_schema[f"{sets}"]["labels"] = f"{sets}/labels"
 
