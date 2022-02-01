@@ -8,7 +8,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train and Evaluate Bichrom')
     parser.add_argument('-training_schema_yaml', required=True,
                         help='YAML file with paths to train, test and val data')
-    parser.add_argument('-h5', help='optional: HDF5 file storing train, test and val data, if supplied, please supply yaml file describing path in HDF5 object')
     parser.add_argument('-len', help='Size of genomic windows',
                         required=True, type=int)
     parser.add_argument('-outdir', required=True, help='Output directory')
@@ -25,5 +24,5 @@ if __name__ == '__main__':
     outdir = args.outdir
     call(['mkdir', outdir])
 
-    train_bichrom(h5file=args.h5, data_paths=data_paths, outdir=outdir, 
+    train_bichrom(data_paths=data_paths, outdir=outdir, 
                   seq_len=args.len, bin_size=int(args.len/args.nbins))

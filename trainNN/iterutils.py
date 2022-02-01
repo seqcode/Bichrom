@@ -3,7 +3,9 @@ to enable whole genome iteration """
 
 import h5py
 import numpy as np
+import tensorflow as tf
 
+from collections import defaultdict
 
 class Sequence:
     dic = {
@@ -116,3 +118,44 @@ def train_generator_h5(h5file, dspath, batchsize, seqlen, dtype, iterflag):
                     break
             else:
                 yield ds[start_index:end_index]
+
+def train_TFRecord_dataset(dspath, batchsize, dataflag):
+    
+    raw_dataset = tf.data.TFRecordDataset(dspath["TFRecord"])
+
+    # prepare feature description
+    feature_description = defaultdict()
+    feature_description["seq"] = tf.io.FixedLenFeature([], tf.string)
+    feature_description["label"] = tf.io.FixedLenFeature([], tf.int64)
+    for ct in dspath["chromatin_tracks"]:
+        feature_description[ct] = tf.io.FixedLenFeature([], tf.string)
+
+    def _parse_function(example_proto, flag="seqonly"):
+        # Parse the input `tf.train.Example` proto using the feature dictionary
+        example_message = tf.io.parse_single_example(example_proto, feature_description)
+
+        seq = example_message["seq"]
+        seq = tf.io.parse_tensor(seq, out_type=tf.int64)
+
+        combined_chromatin_data = []
+        for ct in dspath["chromatin_tracks"]:
+            ct_message = example_message[ct]
+            ct_message = tf.io.parse_tensor(ct_message, out_type=tf.float64)
+            combined_chromatin_data.append(ct)
+        combined_chromatin_data = tf.concat(combined_chromatin_data, axis=0)
+
+        label = example_message["label"]
+
+        if flag=="seqonly":
+            return (seq, label)
+        else:
+            return ((seq, combined_chromatin_data), label)
+
+    def _parse_function_wrapper(example_proto):
+        return _parse_function(example_proto, dataflag)
+
+    parsed_dataset = raw_dataset.map(_parse_function_wrapper)
+
+    return parsed_dataset.batch(batchsize)
+
+    

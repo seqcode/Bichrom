@@ -296,7 +296,7 @@ def get_data_TFRecord(coords, genome_fasta, chromatin_tracks, nbins, outprefix, 
     
     pool = Pool(numProcessors)
     res = pool.starmap_async(get_data_TFRecord_worker_freeze, zip(chunks, [outprefix + "_" + str(i) for i in range(numProcessors)]))
-    res.get()
+    res = res.get()
 
     return res
 

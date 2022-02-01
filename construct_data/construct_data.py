@@ -133,8 +133,7 @@ def construct_training_set(genome_sizes_file, genome_fasta_file, peaks_file, bla
 
     # get the coordinates for training samples
     train_coords = define_training_coordinates(chip_seq_coordinates, genome_sizes_file, acc_bdt, curr_genome_bdt,
-                                #blacklist_bdt, window_length, len(chip_seq_coordinates)*5, [500, -500], None, None)
-                                blacklist_bdt, window_length, 1000, None, None, None)
+                                blacklist_bdt, window_length, len(chip_seq_coordinates)*5, [500, -500], None, None)
 
     # get fasta sequence and chromatin coverage according to the coordinates
     # write TFRecord output
@@ -230,7 +229,7 @@ def main():
                                     to_keep=None,
                                     out_prefix=args.outdir + '/data_train',
                                     chromatin_track_list=args.chromtracks,
-                                    nbins=args.nbins, p=args.p, TFRecord=args.TFRecord)
+                                    nbins=args.nbins, p=args.p)
 
     print('Constructing validation data ...')
     TFRecords_val = construct_test_set(genome_sizes_file=args.info,
@@ -240,7 +239,7 @@ def main():
                         stride=args.len,
                         to_keep=['chr11'],
                         out_prefix=args.outdir + '/data_val',
-                        chromatin_track_list=args.chromtracks, nbins=args.nbins, p=args.p, TFRecord=args.TFRecord)
+                        chromatin_track_list=args.chromtracks, nbins=args.nbins, p=args.p)
 
     print('Constructing test data ...')
     TFRecords_test = construct_test_set(genome_sizes_file=args.info,
@@ -250,7 +249,7 @@ def main():
                         stride=args.len,
                         to_keep=['chr17'],
                         out_prefix=args.outdir + '/data_test',
-                        chromatin_track_list=args.chromtracks, nbins=args.nbins, p=args.p, TFRecord=args.TFRecord)
+                        chromatin_track_list=args.chromtracks, nbins=args.nbins, p=args.p)
 
     # Produce a default yaml file recording the output
     yml_training_schema = {'train': {'seq': 'seq',
