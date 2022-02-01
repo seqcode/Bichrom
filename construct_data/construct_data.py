@@ -1,6 +1,7 @@
 import time
 import argparse
 from tracemalloc import start
+from xmlrpc.client import Boolean, boolean
 import yaml
 import subprocess
 import numpy as np
@@ -8,8 +9,8 @@ import pandas as pd
 from pybedtools import BedTool
 
 import logging
-logging.basicConfig()
-logging.getLogger().setLevel(logging.DEBUG)
+#logging.basicConfig()
+#logging.getLogger().setLevel(logging.DEBUG)
 
 # local imports
 import utils
@@ -117,15 +118,6 @@ def define_training_coordinates(chip_coords: pd.DataFrame, genome_sizes_file: st
     training_coords = training_coords.sample(frac=1)
     return training_coords
 
-def save_data(coords, seq, chromatin_track_list, chromatins, y, out_prefix):
-    # save the data
-    coords[["chrom", "start", "end", "type", "label"]].to_csv(out_prefix + '.coords', header=False, index=False, sep="\t")
-    np.savetxt(out_prefix + '.seq', seq, fmt='%s')
-    for idx, chromatin_track in enumerate(chromatin_track_list):
-        chromatin_out_file = chromatin_track.split('/')[-1].split('.')[0]
-        np.savetxt(out_prefix + '.' + chromatin_out_file + '.chromatin', chromatins[idx], delimiter='\t', fmt='%1.3f')
-    np.savetxt(out_prefix + '.labels', y, fmt='%s')
-
 def construct_training_set(genome_sizes_file, genome_fasta_file, peaks_file, blacklist_file, to_keep, to_filter,
                             window_length, acc_regions_file, out_prefix, chromatin_track_list, nbins, p=1):
 
@@ -141,21 +133,17 @@ def construct_training_set(genome_sizes_file, genome_fasta_file, peaks_file, bla
 
     # get the coordinates for training samples
     train_coords = define_training_coordinates(chip_seq_coordinates, genome_sizes_file, acc_bdt, curr_genome_bdt,
-                                blacklist_bdt, window_length, len(chip_seq_coordinates)*5, [500, -500], None, None)
+                                #blacklist_bdt, window_length, len(chip_seq_coordinates)*5, [500, -500], None, None)
+                                blacklist_bdt, window_length, 1000, None, None, None)
 
     # get fasta sequence and chromatin coverage according to the coordinates
-    # call get_data on forward/reverse strand respectively, then merge
-    X_seq_f, X_chromatin_f, y_f = utils.get_data(train_coords, genome_fasta_file, chromatin_track_list, nbins, reverse=False, numProcessors=p)
-    X_seq_r, X_chromatin_r, y_r = utils.get_data(train_coords, genome_fasta_file, chromatin_track_list, nbins, reverse=True, numProcessors=p)
-
-    X_seq = X_seq_f + X_seq_r
-    X_chromatin = np.concatenate([X_chromatin_f, X_chromatin_r], axis=1)
-    y = pd.concat([y_f, y_r])
-
-    # save the data
-    save_data(train_coords, X_seq, chromatin_track_list, X_chromatin, y, out_prefix)
-
-    return X_seq, X_chromatin, y, train_coords
+    # write TFRecord output
+    TFRecord_file_f = utils.get_data_TFRecord(train_coords, genome_fasta_file, chromatin_track_list, 
+                            nbins, outprefix=out_prefix + "_forward" ,reverse=False, numProcessors=p)
+    TFRecord_file_r = utils.get_data_TFRecord(train_coords, genome_fasta_file, chromatin_track_list, 
+                            nbins, outprefix=out_prefix + "_reverse",reverse=True, numProcessors=p)
+    
+    return (TFRecord_file_r + TFRecord_file_f)
 
 def construct_test_set(genome_sizes_file, genome_fasta_file, peaks_file, blacklist_file, to_keep,
                         window_length, stride, out_prefix, chromatin_track_list, nbins, p=1):
@@ -177,13 +165,11 @@ def construct_test_set(genome_sizes_file, genome_fasta_file, peaks_file, blackli
     
     test_coords = pd.concat([bound_chip_peaks, unbound_genome_chop])
 
-    # get fasta sequence and chromatin coverage according to the coordinates
-    X_seq, X_chromatin, y = utils.get_data(test_coords, genome_fasta_file, chromatin_track_list, nbins, reverse=False, numProcessors=p)
+    # write TFRecord output
+    TFRecord_file = utils.get_data_TFRecord(test_coords, genome_fasta_file, chromatin_track_list, 
+                            nbins, outprefix=out_prefix + "_forward" ,reverse=False, numProcessors=p)    
 
-    # save the data
-    save_data(test_coords, X_seq, chromatin_track_list, X_chromatin, y, out_prefix)
-
-    return X_seq, X_chromatin, y, test_coords
+    return TFRecord_file
 
 def main():
 
@@ -207,7 +193,7 @@ def main():
     parser.add_argument('-p', type=int, help='Number of processors', default=1)
 
     parser.add_argument('-blacklist', default=None, help='Optional, blacklist file for the genome of interest')
-    
+
     args = parser.parse_args()
 
     if args.outdir[0] == '/':
@@ -235,29 +221,8 @@ def main():
 
     print([x.split('/')[-1].split('.')[0] for x in args.chromtracks])
 
-    # Produce a default yaml file recording the output
-    yml_training_schema = {'train': {'seq': out_dir_path + '/data_train.seq',
-                                     'labels': out_dir_path + '/data_train.labels',
-                                     'chromatin_tracks': [out_dir_path + '/data_train.' + x.split('/')[-1].split('.')[0] + '.chromatin'
-                                                          for x in args.chromtracks]},
-                           'val':   {'seq': out_dir_path + '/data_val.seq',
-                                     'labels': out_dir_path + '/data_val.labels',
-                                     'chromatin_tracks': [out_dir_path + '/data_val.' + x.split('/')[-1].split('.')[0] + '.chromatin'
-                                                          for x in args.chromtracks]},
-                           'test':  {'seq': out_dir_path + '/data_test.seq',
-                                     'labels': out_dir_path + '/data_test.labels',
-                                     'chromatin_tracks': [out_dir_path + '/data_test.' + x.split('/')[-1].split('.')[0] + '.chromatin'
-                                                          for x in args.chromtracks]}}
-
-    # Note: The x.split('/')[-1].split('.')[0] accounts for input chromatin bigwig files with
-    # associated directory paths
-
-    with open(args.outdir + '/bichrom.yaml', "w") as fp:
-        yaml.dump(yml_training_schema, fp)
-
-
     print('Constructing train data ...')
-    construct_training_set(genome_sizes_file=args.info, genome_fasta_file=args.fa,
+    TFRecords_train = construct_training_set(genome_sizes_file=args.info, genome_fasta_file=args.fa,
                                     peaks_file=args.peaks,
                                     blacklist_file=args.blacklist, window_length=args.len,
                                     acc_regions_file=args.acc_domains,
@@ -265,27 +230,47 @@ def main():
                                     to_keep=None,
                                     out_prefix=args.outdir + '/data_train',
                                     chromatin_track_list=args.chromtracks,
-                                    nbins=args.nbins, p=args.p)
+                                    nbins=args.nbins, p=args.p, TFRecord=args.TFRecord)
 
     print('Constructing validation data ...')
-    construct_test_set(genome_sizes_file=args.info,
+    TFRecords_val = construct_test_set(genome_sizes_file=args.info,
                         peaks_file=args.peaks,
                         genome_fasta_file=args.fa,
                         blacklist_file=args.blacklist, window_length=args.len,
                         stride=args.len,
                         to_keep=['chr11'],
                         out_prefix=args.outdir + '/data_val',
-                        chromatin_track_list=args.chromtracks, nbins=args.nbins, p=args.p)
+                        chromatin_track_list=args.chromtracks, nbins=args.nbins, p=args.p, TFRecord=args.TFRecord)
 
     print('Constructing test data ...')
-    construct_test_set(genome_sizes_file=args.info,
+    TFRecords_test = construct_test_set(genome_sizes_file=args.info,
                         peaks_file=args.peaks,
                         genome_fasta_file=args.fa,
                         blacklist_file=args.blacklist, window_length=args.len,
                         stride=args.len,
                         to_keep=['chr17'],
                         out_prefix=args.outdir + '/data_test',
-                        chromatin_track_list=args.chromtracks, nbins=args.nbins, p=args.p)
+                        chromatin_track_list=args.chromtracks, nbins=args.nbins, p=args.p, TFRecord=args.TFRecord)
+
+    # Produce a default yaml file recording the output
+    yml_training_schema = {'train': {'seq': 'seq',
+                                     'labels': 'labels',
+                                     'chromatin_tracks': args.chromtracks,
+                                     'TFRecord': TFRecords_train},
+                           'val':   {'seq': 'seq',
+                                     'labels': 'labels',
+                                     'chromatin_tracks': args.chromtracks,
+                                     'TFRecord': TFRecords_val},
+                           'test':  {'seq': 'seq',
+                                     'labels': 'labels',
+                                     'chromatin_tracks': args.chromtracks,
+                                     'TFRecord': TFRecords_test}}
+
+    # Note: The x.split('/')[-1].split('.')[0] accounts for input chromatin bigwig files with
+    # associated directory paths
+
+    with open(args.outdir + '/bichrom.yaml', "w") as fp:
+        yaml.dump(yml_training_schema, fp)
 
 if __name__ == "__main__":
     main()

@@ -2,15 +2,20 @@
 Utilities for iterating constructing data sets and iterating over
 DNA sequence data.
 """
+from doctest import Example
+import multiprocessing
 import pandas as pd
 import numpy as np
 import functools
+from collections import defaultdict
 from multiprocessing import Pool
 
 import pyfasta
 import pyBigWig
 from pybedtools import Interval, BedTool
 import logging
+
+import tensorflow as tf
 
 def filter_chromosomes(input_df, to_filter=None, to_keep=None):
     """
@@ -271,6 +276,99 @@ def get_data(coords, genome_fasta, chromatin_tracks, nbins, reverse=False, numPr
     chromatin_out_lists = np.concatenate(chromatin_out_lists, axis=1)
 
     return X_seq, chromatin_out_lists, y
+
+def get_data_TFRecord(coords, genome_fasta, chromatin_tracks, nbins, outprefix, reverse=False, numProcessors=1):
+    """
+    Given coordinates dataframe, extract the sequence and chromatin signal,
+    Then save in **TFReocrd** format
+    """
+
+    # get pointer
+    genome_pyfasta = pyfasta.Fasta(genome_fasta)
+
+    # split coordinates and assign chunks to workers
+    chunks = np.array_split(coords, numProcessors)
+    get_data_TFRecord_worker_freeze = functools.partial(get_data_TFRecord_worker, 
+                                                    fasta=genome_pyfasta, nbins=nbins, 
+                                                    bigwig_files=chromatin_tracks, reverse=reverse)
+
+    print([outprefix + "_" + str(i) for i in range(numProcessors)])
+    
+    pool = Pool(numProcessors)
+    res = pool.starmap_async(get_data_TFRecord_worker_freeze, zip(chunks, [outprefix + "_" + str(i) for i in range(numProcessors)]))
+    res.get()
+
+    return res
+
+def get_data_TFRecord_worker(coords, outprefix, fasta, bigwig_files, nbins, reverse=False):
+
+    bigwigs = [pyBigWig.open(bw) for bw in bigwig_files]
+
+    # Reference: https://stackoverflow.com/questions/47861084/how-to-store-numpy-arrays-as-tfrecord
+    def serialize_array(array):
+        array = tf.io.serialize_tensor(array)
+        return array
+
+    def _bytes_feature(value):
+        """Returns a bytes_list from a string / byte."""
+        if isinstance(value, type(tf.constant(0))): # if value ist tensor
+            value = value.numpy() # get value of tensor
+        return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+
+    TFRecord_file = outprefix + ".TFRecord"
+    with tf.io.TFRecordWriter(TFRecord_file) as writer:
+        for item in coords.itertuples():
+            feature_dict = defaultdict()
+
+            # seq
+            seq = fasta[item.chrom][int(item.start):int(item.end)]
+            if reverse:
+                seq = rev_comp(seq)
+            seq_serialized = serialize_array(dna2onehot(seq))
+            feature_dict["seq"] = _bytes_feature(seq_serialized)
+
+            # chromatin track
+            for idx, bigwig in enumerate(bigwigs):
+                try:
+                    m = (np.nan_to_num(bigwig.values(item.chrom, item.start, item.end))
+                                        .reshape((nbins, -1))
+                                        .mean(axis=1, dtype=float))
+                except RuntimeError as e:
+                    logging.warning(e)
+                    logging.warning(f"Skip region: {item}")
+                    continue
+                if reverse:
+                    m = m[::-1] 
+                m_serialized = serialize_array(m)
+                feature_dict[bigwig_files[idx]] = _bytes_feature(m_serialized)
+            # label
+            feature_dict["label"] = tf.train.Feature(int64_list=tf.train.Int64List(value=[item.label]))
+
+            example = tf.train.Example(features=tf.train.Features(feature=feature_dict))
+            writer.write(example.SerializeToString())
+
+    return TFRecord_file
+
+def dna2onehot(dnaSeq):
+    DNA2index = {
+        "A": 0,
+        "T": 1,
+        "G": 2,
+        "C": 3
+    }
+
+    seqLen = len(dnaSeq)
+
+    # initialize the matrix to seqlen x 4
+    seqMatrixs = np.zeros((seqLen,4), dtype=int)
+    # change the value to matrix
+    dnaSeq = dnaSeq.upper()
+    for j in range(0,seqLen):
+        try:
+            seqMatrixs[j, DNA2index[dnaSeq[j]]] = 1
+        except KeyError as e:
+            continue
+    return seqMatrixs
 
 def rev_comp(inp_str):
     rc_dict = {'A': 'T', 'G': 'C', 'T': 'A', 'C': 'G', 'c': 'g',
