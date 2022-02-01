@@ -105,7 +105,7 @@ def train(model, h5file, train_path, val_path, steps_per_epoch, batch_size,
     adam = Adam(lr=0.001)
     model.compile(loss='binary_crossentropy', optimizer=adam)
     train_generator = data_generator(h5file, train_path, batch_size, seqlen=500)
-    val_generator = data_generator(h5file, val_path, 200000, seqlen=500)
+    val_generator = data_generator(h5file, val_path, 20000, seqlen=500)
 
     validation_data = next(val_generator)
     precision_recall_history = PrecisionRecall(validation_data)

@@ -6,19 +6,34 @@ import numpy as np
 
 
 class Sequence:
+    dic = {
+        "A": 0,
+        "T": 1,
+        "G": 2,
+        "C": 3
+    }
+
     """ Methods for manipulation of DNA Sequence """
     def __init__(self):
         pass
 
     @staticmethod
-    def map(buf, seqlen):
-        """ Converts a list of sequences to a one hot numpy array """
-        fd = {'A' : [1, 0, 0, 0], 'T': [0,1,0,0], 'G' : [0,0,1,0],'C': [0,0,0,1], 'N': [0,0,0,0],
-              'a' : [1, 0, 0, 0], 't': [0,1,0,0], 'g': [0,0,1,0], 'c': [0,0,0,1],
-              'n': [0,0,0,0]}
-        onehot = [fd[base] for seq in buf for base in seq]
-        onehot_np = np.reshape(onehot,(-1,seqlen,4))
-        return onehot_np
+    def map(buf, seqlength):
+        numSeq = len(buf)        
+        seqLen = len(buf[0])
+
+        # initialize the matrix to seqlen x 4
+        seqMatrixs = np.zeros((numSeq,seqLen,4), dtype=int)
+        # change the value to matrix
+        for i in range(0,numSeq):
+            dnaSeq = buf[i].upper()
+            seqMatrix = seqMatrixs[i]
+            for j in range(0,seqLen):
+                    try:
+                        seqMatrix[j, Sequence.dic[dnaSeq[j]]] = 1
+                    except KeyError:
+                        continue
+        return seqMatrixs
 
     @staticmethod
     def add_to_buffer(buf, line):
