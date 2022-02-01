@@ -14,19 +14,11 @@ from tensorflow.distribute import MirroredStrategy
 # local imports
 import iterutils
 
-def data_generator(h5file, path, batchsize, seqlen):
-    if h5file:
-        train_generator = iterutils.train_generator_h5
-    else:
-        train_generator = iterutils.train_generator
+def TFdataset(path, batchsize, dataflag):
 
-    X = train_generator(h5file, path['seq'], batchsize, seqlen, 'seq', 'repeat')
-    y = train_generator(h5file, path['labels'], batchsize, seqlen, 'labels', 'repeat')
+    TFdataset_batched = iterutils.train_TFRecord_dataset(path['seq'], batchsize, dataflag)
 
-    while True:
-        yield next(X), next(y)
-
-
+    return TFdataset_batched
 class PrecisionRecall(Callback):
 
     def __init__(self, val_data):
@@ -39,9 +31,13 @@ class PrecisionRecall(Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         """ monitor PR """
-        x_val, y_val = self.validation_data
-        predictions = self.model.predict(x_val)
-        aupr = auprc(y_val, predictions)
+        predictions = np.array(list)
+        labels = np.array(list)
+        for x_val, y_val in self.validation_data:
+            prediction = self.model.predict(x_val)
+            predictions = np.concatenate([predictions, prediction])
+            labels = np.concatenate([labels, y_val])
+        aupr = auprc(labels, predictions)
         self.val_auprc.append(aupr)
 
 
@@ -87,7 +83,7 @@ def save_metrics(hist_object, pr_history, records_path):
 
 
 # NOTE: ADDING A RECORDS PATH HERE!
-def train(model, h5file, train_path, val_path, steps_per_epoch, batch_size,
+def train(model, train_path, val_path, steps_per_epoch, batch_size,
           records_path):
     """
     Train the Keras graph model
@@ -104,11 +100,10 @@ def train(model, h5file, train_path, val_path, steps_per_epoch, batch_size,
     
     adam = Adam(lr=0.001)
     model.compile(loss='binary_crossentropy', optimizer=adam)
-    train_generator = data_generator(h5file, train_path, batch_size, seqlen=500)
-    val_generator = data_generator(h5file, val_path, 20000, seqlen=500)
+    train_dataset = TFdataset(train_path, batch_size, "seqonly")
+    val_dataset = TFdataset(val_path, batch_size, "seqonly")
 
-    validation_data = next(val_generator)
-    precision_recall_history = PrecisionRecall(validation_data)
+    precision_recall_history = PrecisionRecall(val_dataset)
     # adding check-pointing
     checkpointer = ModelCheckpoint(records_path + 'model_epoch{epoch}.hdf5',
                                    verbose=1, save_best_only=False)
@@ -116,11 +111,10 @@ def train(model, h5file, train_path, val_path, steps_per_epoch, batch_size,
     # earlystop = EarlyStopping(monitor='val_loss', mode='min', verbose=1,
     #                           patience=5)
     # training the model..
-    hist = model.fit_generator(epochs=15, steps_per_epoch=steps_per_epoch,
-                               generator=train_generator,
-                               validation_data=validation_data,
-                               callbacks=[precision_recall_history,
-                                          checkpointer])
+    hist = model.fit(train_dataset, pochs=15, 
+                        validation_data=val_dataset,
+                        callbacks=[precision_recall_history,
+                                    checkpointer])
 
     loss, val_pr = save_metrics(hist, precision_recall_history,
                                 records_path=records_path)
@@ -130,17 +124,9 @@ def train(model, h5file, train_path, val_path, steps_per_epoch, batch_size,
 def build_and_train_net(hyperparams, h5file, train_path, val_path, batch_size,
                         records_path, seq_len):
 
-    # Calculate size of training set
-    if not h5file:
-        training_set_size = len(np.loadtxt(train_path['labels']))
-    else:
-        with h5py.File(h5file, 'r', libver='latest', swmr=True) as temp:
-            training_set_size = temp[train_path['labels']].shape[0]
-    # Calculate the steps per epoch
-    steps = training_set_size/batch_size
     model = build_model(params=hyperparams, seq_length=seq_len)
 
     loss, val_pr = train(model, h5file=h5file, train_path=train_path, val_path=val_path,
-                         steps_per_epoch=steps, batch_size=batch_size,
-                         records_path=records_path)
+                        batch_size=batch_size, records_path=records_path)
+
     return loss, val_pr

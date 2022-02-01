@@ -32,7 +32,7 @@ def return_best_model(pr_vec, model_path):
     return model_file
 
 
-def run_seq_network(h5file, train_path, val_path, records_path, seq_len):
+def run_seq_network(train_path, val_path, records_path, seq_len):
     """
     Train M-SEQ. (Model Definition in README)
     Parameters:
@@ -50,7 +50,7 @@ def run_seq_network(h5file, train_path, val_path, records_path, seq_len):
     curr_params = Params()
 
     # train the network
-    loss, seq_val_pr = build_and_train_net(curr_params, h5file, train_path, val_path,
+    loss, seq_val_pr = build_and_train_net(curr_params, train_path, val_path,
                                            batch_size=curr_params.batchsize,
                                            records_path=records_path_seq,
                                            seq_len=seq_len)
@@ -59,7 +59,7 @@ def run_seq_network(h5file, train_path, val_path, records_path, seq_len):
     return model_seq_path
 
 
-def run_bimodal_network(h5file, train_path, val_path, records_path, base_seq_model_path,
+def run_bimodal_network(train_path, val_path, records_path, base_seq_model_path,
                         bin_size, seq_len):
     """
     Train M-SC. (Model Definition in README)
@@ -81,7 +81,7 @@ def run_bimodal_network(h5file, train_path, val_path, records_path, base_seq_mod
     curr_params = Params()
 
     # train the network
-    loss, bimodal_val_pr = transfer_and_train_msc(h5file, train_path, val_path,
+    loss, bimodal_val_pr = transfer_and_train_msc(train_path, val_path,
                                                   base_seq_model_path,
                                                   batch_size=curr_params.batchsize,
                                                   records_path=records_path_sc,
@@ -94,14 +94,14 @@ def run_bimodal_network(h5file, train_path, val_path, records_path, base_seq_mod
     return model_sc
 
 
-def train_bichrom(h5file, data_paths, outdir, seq_len, bin_size):
+def train_bichrom(data_paths, outdir, seq_len, bin_size):
     # Train the sequence-only network (M-SEQ)
-    mseq_path = run_seq_network(h5file=h5file,  train_path=data_paths['train'], val_path=data_paths['val'],
+    mseq_path = run_seq_network(train_path=data_paths['train'], val_path=data_paths['val'],
                            records_path=outdir, seq_len=seq_len)
 
     no_of_chromatin_tracks = len(data_paths['train']['chromatin_tracks'])
     # Train the bimodal network (M-SC)
-    msc_path = run_bimodal_network(h5file=h5file, train_path=data_paths['train'],
+    msc_path = run_bimodal_network(train_path=data_paths['train'],
                               val_path=data_paths['val'], records_path=outdir,
                               base_seq_model_path=mseq_path, bin_size=bin_size, seq_len=seq_len)
 
@@ -115,7 +115,7 @@ def train_bichrom(h5file, data_paths, outdir, seq_len, bin_size):
 
     mseq = load_model(mseq_path)
     msc = load_model(msc_path)
-    evaluate_models(sequence_len=seq_len, h5file=h5file, path=data_paths['test'],
+    evaluate_models(sequence_len=seq_len, path=data_paths['test'],
                     probas_out_seq=probas_out_seq, probas_out_sc=probas_out_sc,
                     model_seq=mseq, model_sc=msc,
                     records_file_path=records_file_path)
