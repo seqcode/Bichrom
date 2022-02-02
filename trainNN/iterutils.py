@@ -154,7 +154,7 @@ def train_TFRecord_dataset(dspath, batchsize, dataflag):
     def _parse_function_wrapper(example_proto):
         return _parse_function(example_proto, dataflag)
 
-    parsed_dataset = raw_dataset.map(_parse_function_wrapper)
+    parsed_dataset = raw_dataset.map(_parse_function_wrapper, num_parallel_calls=tf.data.AUTOTUNE)
 
     return parsed_dataset.batch(batchsize)
 

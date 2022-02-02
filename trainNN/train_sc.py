@@ -12,7 +12,7 @@ from tensorflow.keras.callbacks import Callback
 from tensorflow.keras.callbacks import ModelCheckpoint
 import tensorflow.keras.backend as K
 
-from tensorflow.distribute import MirroredStrategy
+import tensorflow as tf
 
 import iterutils
 
@@ -57,7 +57,7 @@ def add_new_layers(base_model_path, seq_len, no_of_chromatin_tracks, bin_size):
     def permute(x):
         return K.permute_dimensions(x, (0, 2, 1))
 
-    mirrored_strategy = MirroredStrategy()
+    mirrored_strategy = tf.distribute.MirroredStrategy()
     with mirrored_strategy.scope():
         # load basemodel
         base_model = load_model(base_model_path)

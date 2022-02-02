@@ -9,16 +9,17 @@ from tensorflow.keras.callbacks import Callback
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.optimizers import Adam
 
-from tensorflow.distribute import MirroredStrategy
+import tensorflow as tf
 
 # local imports
 import iterutils
 
 def TFdataset(path, batchsize, dataflag):
 
-    TFdataset_batched = iterutils.train_TFRecord_dataset(path['seq'], batchsize, dataflag)
+    TFdataset_batched = iterutils.train_TFRecord_dataset(path, batchsize, dataflag)
 
     return TFdataset_batched
+
 class PrecisionRecall(Callback):
 
     def __init__(self, val_data):
@@ -31,11 +32,11 @@ class PrecisionRecall(Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         """ monitor PR """
-        predictions = np.array(list)
-        labels = np.array(list)
+        predictions = np.array([])
+        labels = np.array([])
         for x_val, y_val in self.validation_data:
             prediction = self.model.predict(x_val)
-            predictions = np.concatenate([predictions, prediction])
+            predictions = np.concatenate([predictions, prediction.flatten()])
             labels = np.concatenate([labels, y_val])
         aupr = auprc(labels, predictions)
         self.val_auprc.append(aupr)
@@ -51,7 +52,7 @@ def build_model(params, seq_length):
         model (keras model): A keras model
     """
     # MirroredStrategy to employ all available GPUs
-    mirrored_strategy = MirroredStrategy()
+    mirrored_strategy = tf.distribute.MirroredStrategy()
     with mirrored_strategy.scope():
         seq_input = Input(shape=(seq_length, 4,), name='seq')
         xs = Conv1D(filters=params.n_filters,
@@ -83,7 +84,7 @@ def save_metrics(hist_object, pr_history, records_path):
 
 
 # NOTE: ADDING A RECORDS PATH HERE!
-def train(model, train_path, val_path, steps_per_epoch, batch_size,
+def train(model, train_path, val_path, batch_size,
           records_path):
     """
     Train the Keras graph model
@@ -100,8 +101,8 @@ def train(model, train_path, val_path, steps_per_epoch, batch_size,
     
     adam = Adam(lr=0.001)
     model.compile(loss='binary_crossentropy', optimizer=adam)
-    train_dataset = TFdataset(train_path, batch_size, "seqonly")
-    val_dataset = TFdataset(val_path, batch_size, "seqonly")
+    train_dataset = TFdataset(train_path, batch_size, "seqonly").prefetch(tf.data.AUTOTUNE).cache()
+    val_dataset = TFdataset(val_path, batch_size, "seqonly").prefetch(tf.data.AUTOTUNE).cache()
 
     precision_recall_history = PrecisionRecall(val_dataset)
     # adding check-pointing
@@ -111,7 +112,7 @@ def train(model, train_path, val_path, steps_per_epoch, batch_size,
     # earlystop = EarlyStopping(monitor='val_loss', mode='min', verbose=1,
     #                           patience=5)
     # training the model..
-    hist = model.fit(train_dataset, pochs=15, 
+    hist = model.fit(train_dataset, epochs=15, 
                         validation_data=val_dataset,
                         callbacks=[precision_recall_history,
                                     checkpointer])
@@ -121,12 +122,12 @@ def train(model, train_path, val_path, steps_per_epoch, batch_size,
     return loss, val_pr
 
 
-def build_and_train_net(hyperparams, h5file, train_path, val_path, batch_size,
+def build_and_train_net(hyperparams, train_path, val_path, batch_size,
                         records_path, seq_len):
 
     model = build_model(params=hyperparams, seq_length=seq_len)
 
-    loss, val_pr = train(model, h5file=h5file, train_path=train_path, val_path=val_path,
+    loss, val_pr = train(model, train_path=train_path, val_path=val_path,
                         batch_size=batch_size, records_path=records_path)
 
     return loss, val_pr

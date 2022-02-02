@@ -1,5 +1,4 @@
 import argparse
-from asyncio import subprocess
 from json import load
 import numpy as np
 import yaml
