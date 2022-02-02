@@ -141,7 +141,7 @@ def train_TFRecord_dataset(dspath, batchsize, dataflag):
         for ct in dspath["chromatin_tracks"]:
             ct_message = example_message[ct]
             ct_message = tf.io.parse_tensor(ct_message, out_type=tf.float64)
-            combined_chromatin_data.append(ct)
+            combined_chromatin_data.append(ct_message)
         combined_chromatin_data = tf.concat(combined_chromatin_data, axis=0)
 
         label = example_message["label"]
@@ -149,12 +149,15 @@ def train_TFRecord_dataset(dspath, batchsize, dataflag):
         if flag=="seqonly":
             return (seq, label)
         else:
-            return ((seq, combined_chromatin_data), label)
+            return {"seq":seq, "chrom_input":combined_chromatin_data}, label
 
     def _parse_function_wrapper(example_proto):
         return _parse_function(example_proto, dataflag)
 
-    parsed_dataset = raw_dataset.map(_parse_function_wrapper, num_parallel_calls=tf.data.AUTOTUNE)
+    parsed_dataset = raw_dataset.map(_parse_function_wrapper, num_parallel_calls=20)
+    options = tf.data.Options()
+    options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.FILE
+    parsed_dataset = parsed_dataset.with_options(options)
 
     return parsed_dataset.batch(batchsize)
 
