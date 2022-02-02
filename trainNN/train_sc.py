@@ -129,7 +129,7 @@ def transfer(train_path, val_path, basemodel, model,
     for layer in basemodel.layers:
         layer.trainable = False
     # Training rest of the model.
-    sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+    sgd = SGD(learning_rate=0.01, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(loss='binary_crossentropy', optimizer=sgd)
 
     # Get train and validation data

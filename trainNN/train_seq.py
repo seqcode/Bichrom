@@ -104,7 +104,7 @@ def train(model, train_path, val_path, batch_size,
         loss (ndarray): An array with the validation loss at each epoch
     """
     
-    adam = Adam(lr=0.001)
+    adam = Adam(learning_rate=0.001)
     model.compile(loss='binary_crossentropy', optimizer=adam)
     train_dataset = TFdataset(train_path, batch_size, "seqonly").prefetch(tf.data.AUTOTUNE)
     val_dataset = TFdataset(val_path, batch_size, "seqonly").prefetch(tf.data.AUTOTUNE)
