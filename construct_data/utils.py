@@ -2,11 +2,11 @@
 Utilities for iterating constructing data sets and iterating over
 DNA sequence data.
 """
-from doctest import Example
 import multiprocessing
 import pandas as pd
 import numpy as np
 import functools
+import math
 from collections import defaultdict
 from multiprocessing import Pool
 
@@ -287,7 +287,8 @@ def get_data_TFRecord(coords, genome_fasta, chromatin_tracks, nbins, outprefix, 
     genome_pyfasta = pyfasta.Fasta(genome_fasta)
 
     # split coordinates and assign chunks to workers
-    chunks = np.array_split(coords, numProcessors)
+    num_chunks = math.ceil(len(coords) / 7000)
+    chunks = np.array_split(coords, num_chunks)
     get_data_TFRecord_worker_freeze = functools.partial(get_data_TFRecord_worker, 
                                                     fasta=genome_pyfasta, nbins=nbins, 
                                                     bigwig_files=chromatin_tracks, reverse=reverse)
@@ -295,7 +296,7 @@ def get_data_TFRecord(coords, genome_fasta, chromatin_tracks, nbins, outprefix, 
     print([outprefix + "_" + str(i) for i in range(numProcessors)])
     
     pool = Pool(numProcessors)
-    res = pool.starmap_async(get_data_TFRecord_worker_freeze, zip(chunks, [outprefix + "_" + str(i) for i in range(numProcessors)]))
+    res = pool.starmap_async(get_data_TFRecord_worker_freeze, zip(chunks, [outprefix + "_" + str(i) for i in range(num_chunks)]))
     res = res.get()
 
     return res
