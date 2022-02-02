@@ -79,12 +79,16 @@ class PrecisionRecall(Callback):
         predictions = np.array([])
         labels = np.array([])
         # TODO: How to simplify this part
-        for x_val, y_val in self.validation_data:
-            x_val = tf.data.Dataset.from_tensor_slices(np.expand_dims(x_val, axis=0))
-            options = tf.data.Options()
-            options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.FILE
-            x_val = x_val.with_options(options)
-            prediction = self.model.predict(x_val)
+        for x_vals, y_val in self.validation_data:
+            ds = []
+            for key, val in x_vals.items():
+                val = tf.data.Dataset.from_tensors(val)
+                options = tf.data.Options()
+                options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.FILE
+                val = val.with_options(options)
+                ds.append(val)
+            ds_zip = tf.data.Dataset.zip((tuple(ds),))
+            prediction = self.model.predict(ds_zip)
             predictions = np.concatenate([predictions, prediction.flatten()])
             labels = np.concatenate([labels, y_val])
         aupr = auprc(labels, predictions)
