@@ -3,10 +3,6 @@ import yaml
 from subprocess import call
 from train import train_bichrom
 
-from tensorboard import program
-
-tracking_address = "tensorboard_logs/"
-
 if __name__ == '__main__':
     # parsing
     parser = argparse.ArgumentParser(description='Train and Evaluate Bichrom')
@@ -17,12 +13,6 @@ if __name__ == '__main__':
     parser.add_argument('-outdir', required=True, help='Output directory')
     parser.add_argument('-nbins', type=int, required=True, help='Number of bins')
     args = parser.parse_args()
-
-    # enable tensorboard    
-    tb = program.TensorBoard()
-    tb.configure(argv=[None, '--logdir', tracking_address])
-    url = tb.launch()
-    print(f"Tensorflow listening on {url}")
 
     # load the yaml file with input data paths:
     with open(args.training_schema_yaml, 'r') as f:
