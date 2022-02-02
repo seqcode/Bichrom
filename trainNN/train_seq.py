@@ -34,7 +34,12 @@ class PrecisionRecall(Callback):
         """ monitor PR """
         predictions = np.array([])
         labels = np.array([])
+        # TODO: How to simplify this part
         for x_val, y_val in self.validation_data:
+            x_val = tf.data.Dataset.from_tensors(x_val)
+            options = tf.data.Options()
+            options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.FILE
+            x_val = x_val.with_options(options)
             prediction = self.model.predict(x_val)
             predictions = np.concatenate([predictions, prediction.flatten()])
             labels = np.concatenate([labels, y_val])
@@ -101,8 +106,8 @@ def train(model, train_path, val_path, batch_size,
     
     adam = Adam(lr=0.001)
     model.compile(loss='binary_crossentropy', optimizer=adam)
-    train_dataset = TFdataset(train_path, batch_size, "seqonly").prefetch(tf.data.AUTOTUNE).cache()
-    val_dataset = TFdataset(val_path, batch_size, "seqonly").prefetch(tf.data.AUTOTUNE).cache()
+    train_dataset = TFdataset(train_path, batch_size, "seqonly").prefetch(tf.data.AUTOTUNE)
+    val_dataset = TFdataset(val_path, batch_size, "seqonly").prefetch(tf.data.AUTOTUNE)
 
     precision_recall_history = PrecisionRecall(val_dataset)
     # adding check-pointing
@@ -112,10 +117,11 @@ def train(model, train_path, val_path, batch_size,
     # earlystop = EarlyStopping(monitor='val_loss', mode='min', verbose=1,
     #                           patience=5)
     # training the model..
-    hist = model.fit(train_dataset, epochs=15, 
+    hist = model.fit(train_dataset, epochs=15,
                         validation_data=val_dataset,
                         callbacks=[precision_recall_history,
-                                    checkpointer])
+                                    checkpointer,
+                                    tensorboard_callback])
 
     loss, val_pr = save_metrics(hist, precision_recall_history,
                                 records_path=records_path)

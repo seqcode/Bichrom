@@ -17,31 +17,11 @@ import tensorflow as tf
 import iterutils
 
 
-def data_generator(h5file, path, batchsize, seqlen, bin_size):
-    if h5file:
-        train_generator = iterutils.train_generator_h5
-    else:
-        train_generator = iterutils.train_generator
-        
-    dat_seq = train_generator(h5file, path['seq'], batchsize, seqlen, 'seq', 'repeat')
-    dat_chromatin = []
-    for chromatin_track in path['chromatin_tracks']:
-        dat_chromatin.append(
-            train_generator(h5file, chromatin_track, batchsize, seqlen, 'chrom', 'repeat'))
-    y = train_generator(h5file, path['labels'], batchsize, seqlen, 'labels', 'repeat')
-    while True:
-        combined_chrom_data = []
-        for chromatin_track_generators in dat_chromatin:
-            curr_chromatin_mark = next(chromatin_track_generators)
-            mark_resolution = curr_chromatin_mark.shape
-            assert (mark_resolution == (batchsize, seqlen/bin_size)),\
-                "Please check binning, specified bin size=50"
-            combined_chrom_data.append(pd.DataFrame(curr_chromatin_mark))
-        chromatin_features = pd.concat(combined_chrom_data, axis=1).values
-        sequence_features = next(dat_seq)
-        labels = next(y)
-        yield [sequence_features, chromatin_features], labels
+def TFdataset(path, batchsize, dataflag):
 
+    TFdataset_batched = iterutils.train_TFRecord_dataset(path, batchsize, dataflag)
+
+    return TFdataset_batched
 
 def add_new_layers(base_model_path, seq_len, no_of_chromatin_tracks, bin_size):
     """
@@ -95,9 +75,19 @@ class PrecisionRecall(Callback):
         self.train_auprc = []
 
     def on_epoch_end(self, epoch, logs=None):
-        (x_val, c_val), y_val = self.validation_data
-        predictions = self.model.predict([x_val, c_val])
-        aupr = auprc(y_val, predictions)
+        """ monitor PR """
+        predictions = np.array([])
+        labels = np.array([])
+        # TODO: How to simplify this part
+        for x_val, y_val in self.validation_data:
+            x_val = tf.data.Dataset.from_tensor_slices(np.expand_dims(x_val, axis=0))
+            options = tf.data.Options()
+            options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.FILE
+            x_val = x_val.with_options(options)
+            prediction = self.model.predict(x_val)
+            predictions = np.concatenate([predictions, prediction.flatten()])
+            labels = np.concatenate([labels, y_val])
+        aupr = auprc(labels, predictions)
         self.val_auprc.append(aupr)
 
 
@@ -112,8 +102,8 @@ def save_metrics(hist_object, pr_history, records_path):
     return loss, val_pr
 
 
-def transfer(h5file, train_path, val_path, basemodel, model, steps_per_epoch,
-             batchsize, records_path, bin_size, seq_len):
+def transfer(train_path, val_path, basemodel, model,
+             batchsize, records_path):
     """
     Trains the M-SC, transferring weights from the pre-trained M-SEQ.
     The M-SEQ weights are kept fixed except for the final layer.
@@ -139,16 +129,14 @@ def transfer(h5file, train_path, val_path, basemodel, model, steps_per_epoch,
     model.compile(loss='binary_crossentropy', optimizer=sgd)
 
     # Get train and validation data
-    train_data_generator = data_generator(h5file, train_path, batchsize, seqlen=seq_len, bin_size=bin_size)
-    val_data_generator = data_generator(h5file, val_path, 20000, seqlen=seq_len, bin_size=bin_size)
-    validation_data = next(val_data_generator)
-    precision_recall_history = PrecisionRecall(validation_data)
+    train_dataset = TFdataset(train_path, batchsize, "all").prefetch(tf.data.AUTOTUNE)
+    val_dataset = TFdataset(val_path, batchsize, "all").prefetch(tf.data.AUTOTUNE)
+    precision_recall_history = PrecisionRecall(val_dataset)
     checkpointer = ModelCheckpoint(records_path + 'model_epoch{epoch}.hdf5',
                                    verbose=1, save_best_only=False)
 
-    hist = model.fit_generator(epochs=15, steps_per_epoch=steps_per_epoch,
-                               generator=train_data_generator,
-                               validation_data=validation_data,
+    hist = model.fit_generator(train_dataset, epochs=15,
+                               validation_data=val_dataset,
                                callbacks=[precision_recall_history,
                                           checkpointer])
 
@@ -157,20 +145,12 @@ def transfer(h5file, train_path, val_path, basemodel, model, steps_per_epoch,
     return loss, val_pr
 
 
-def transfer_and_train_msc(h5file, train_path, val_path, base_model_path,
+def transfer_and_train_msc(train_path, val_path, base_model_path,
                            batch_size, records_path, bin_size, seq_len):
 
-     # Calculate size of training set
-    if not h5file:
-        training_set_size = len(np.loadtxt(train_path['labels']))
-    else:
-        with h5py.File(h5file, 'r', libver='latest', swmr=True) as temp:
-            training_set_size = temp[train_path['labels']].shape[0]
-    # Calculate the steps per epoch
-    steps_per_epoch = training_set_size / batch_size
     # Calculate number of chromatin tracks
     no_of_chrom_tracks = len(train_path['chromatin_tracks'])
     model, basemodel = add_new_layers(base_model_path, seq_len, no_of_chrom_tracks, bin_size)
-    loss, val_pr = transfer(h5file, train_path, val_path, basemodel, model, steps_per_epoch,
-                    batch_size, records_path, bin_size, seq_len)
+    loss, val_pr = transfer(train_path, val_path, basemodel, model,
+                    batch_size, records_path)
     return loss, val_pr
