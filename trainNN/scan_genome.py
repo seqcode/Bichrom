@@ -7,39 +7,21 @@ from sklearn.metrics import precision_recall_curve
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import tensorflow as tf
 
 # user defined module
 import iterutils
 from helper import plot_distributions
 
 
-def merge_generators(h5file, path, batchsize, seqlen, mode):
-    if h5file:
-        train_generator = iterutils.train_generator_h5
-    else:
-        train_generator = iterutils.train_generator
+def TFdataset(path, batchsize, dataflag):
 
-    dat_seq = train_generator(h5file, path['seq'], batchsize, seqlen, 'seq', mode)
-    dat_chromatin = []
-    for chromatin_track in path['chromatin_tracks']:
-        dat_chromatin.append(
-            train_generator(h5file, chromatin_track, batchsize, seqlen, 'chrom', mode))
-    y = train_generator(h5file, path['labels'], batchsize, seqlen, 'labels', mode)
-    while True:
-        try:
-            combined_chrom_data = []
-            for chromatin_track_generators in dat_chromatin:
-                x = next(chromatin_track_generators)
-                combined_chrom_data.append(pd.DataFrame(x))
-            chromatin_features = pd.concat(combined_chrom_data, axis=1).values
-            sequence_features = next(dat_seq)
-            labels = next(y)
-            yield [sequence_features, chromatin_features], labels
-        except StopIteration:
-            break
+    TFdataset_batched = iterutils.train_TFRecord_dataset(path, batchsize, dataflag)
+
+    return TFdataset_batched
 
 
-def test_on_batch(batch_generator, model, outfile, mode):
+def test_on_batch(TFdataset, model, outfile, mode):
     """
     Get probabilities for each test data point.
     The reason that this is implemented in a batch is because
@@ -51,23 +33,27 @@ def test_on_batch(batch_generator, model, outfile, mode):
         outfile (str): The outfile used for storing probabilities.
     Returns: None (Saves an output file with the probabilities for the test set )
     """
-    counter = 0
     # erase the contents in outfile
     file = open(outfile, "w")
     file.close()
-    while True:
-        try:
-            [X_test, acc_test], y = next(batch_generator)
-            if mode == 'seq_only':
-                batch_probas = model.predict_on_batch([X_test])
-            else:
-                batch_probas = model.predict_on_batch([X_test, acc_test])
-            # saving to file: 
-            with open(outfile, "a") as fh:
-                np.savetxt(fh, batch_probas)
-            counter += 1
-        except StopIteration:
-            break
+
+    probas = np.array([])
+    true_labels = np.array([])
+    for x_vals, y_val in TFdataset:
+        if mode == 'seq_only':
+            X_test = tf.data.Dataset.from_tensors(x_vals["seq"])
+        else:
+            ds = [tf.data.Dataset.from_tensors(val) for key, val in x_vals.items()]
+            X_test = tf.data.Dataset.zip((tuple(ds),))
+        batch_probas = model.predict_on_batch(X_test)
+        # saving to file: 
+        with open(outfile, "a") as fh:
+            np.savetxt(fh, batch_probas)
+        # save predictions and true labels
+        probas = np.concatenate([probas, batch_probas])
+        true_labels = np.concatenate([true_labels, y_val])
+    
+    return true_labels, probas
 
 
 def get_metrics(test_labels, test_probas, records_file, model_name):
@@ -96,7 +82,7 @@ def get_metrics(test_labels, test_probas, records_file, model_name):
     records_file.write("AUC PRC:{0}\n".format(prc_auc))
 
 
-def get_probabilities(h5file, path, seq_len, model, outfile, mode):
+def get_probabilities(path, model, outfile, mode):
     """
     Get network-assigned probabilities
     Parameters:
@@ -107,15 +93,11 @@ def get_probabilities(h5file, path, seq_len, model, outfile, mode):
          true labels (ndarray): True test-set labels
     """
     # Inputing a range of default values here, can be changed later.
-    data_generator = merge_generators(h5file=h5file, 
-                                      path=path, batchsize=1000,
-                                      seqlen=seq_len, mode='nr')
+    dataset = TFdataset(path=path, batchsize=1000, dataflag="all")
     # Load the keras model
     # model = load_model(model_file)
-    test_on_batch(data_generator, model, outfile, mode)
-    probas = np.loadtxt(outfile)
-    with h5py.File(h5file, 'r', libver='latest', swmr=True) as h5:
-        true_labels = h5[path['labels']][:]
+    true_labels, probas = test_on_batch(dataset, model, outfile, mode)
+
     return true_labels, probas
 
 
@@ -134,7 +116,7 @@ def combine_pr_curves(records_file, m_seq_probas, m_sc_probas, labels):
     plt.savefig(records_file + '.pr_curves.pdf')
 
 
-def evaluate_models(sequence_len, h5file, path, probas_out_seq, probas_out_sc,
+def evaluate_models(path, probas_out_seq, probas_out_sc,
                     model_seq, model_sc, records_file_path):
 
     # Define the file that contains testing metrics
@@ -142,16 +124,12 @@ def evaluate_models(sequence_len, h5file, path, probas_out_seq, probas_out_sc,
 
     # Get the probabilities for both M-SEQ and M-SC models:
     # Note: Labels are the same for M-SC and M-SEQ
-    true_labels, probas_seq = get_probabilities(h5file=h5file,
-                                                path=path,
-                                                seq_len=sequence_len,
+    true_labels, probas_seq = get_probabilities(path=path,
                                                 model=model_seq,
                                                 outfile=probas_out_seq,
                                                 mode='seq_only')
 
-    _, probas_sc = get_probabilities(h5file=h5file,
-                                     path=path, 
-                                     seq_len=sequence_len,
+    _, probas_sc = get_probabilities(path=path, 
                                      model=model_sc, outfile=probas_out_sc,
                                      mode='sc')
 

@@ -40,7 +40,7 @@ class PrecisionRecall(Callback):
             options = tf.data.Options()
             options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.FILE
             x_val = x_val.with_options(options)
-            prediction = self.model.predict(x_val)
+            prediction = self.model.predict_on_batch(x_val)
             predictions = np.concatenate([predictions, prediction.flatten()])
             labels = np.concatenate([labels, y_val])
         aupr = auprc(labels, predictions)

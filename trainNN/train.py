@@ -114,7 +114,7 @@ def train_bichrom(data_paths, outdir, seq_len, bin_size):
 
     mseq = load_model(mseq_path)
     msc = load_model(msc_path)
-    evaluate_models(sequence_len=seq_len, path=data_paths['test'],
+    evaluate_models(path=data_paths['test'],
                     probas_out_seq=probas_out_seq, probas_out_sc=probas_out_sc,
                     model_seq=mseq, model_sc=msc,
                     records_file_path=records_file_path)
