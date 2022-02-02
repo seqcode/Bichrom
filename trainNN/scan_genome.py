@@ -45,12 +45,15 @@ def test_on_batch(TFdataset, model, outfile, mode):
         else:
             ds = [tf.data.Dataset.from_tensors(val) for key, val in x_vals.items()]
             X_test = tf.data.Dataset.zip((tuple(ds),))
-        batch_probas = model.predict_on_batch(X_test)
+        options = tf.data.Options()
+        options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.FILE
+        X_test = X_test.with_options(options)
+        batch_probas = model.predict(X_test)
         # saving to file: 
         with open(outfile, "a") as fh:
             np.savetxt(fh, batch_probas)
         # save predictions and true labels
-        probas = np.concatenate([probas, batch_probas])
+        probas = np.concatenate([probas, batch_probas.flatten()])
         true_labels = np.concatenate([true_labels, y_val])
     
     return true_labels, probas

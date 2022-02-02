@@ -40,7 +40,7 @@ class PrecisionRecall(Callback):
             options = tf.data.Options()
             options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.FILE
             x_val = x_val.with_options(options)
-            prediction = self.model.predict_on_batch(x_val)
+            prediction = self.model.predict(x_val)
             predictions = np.concatenate([predictions, prediction.flatten()])
             labels = np.concatenate([labels, y_val])
         aupr = auprc(labels, predictions)
@@ -120,8 +120,7 @@ def train(model, train_path, val_path, batch_size,
     hist = model.fit(train_dataset, epochs=15,
                         validation_data=val_dataset,
                         callbacks=[precision_recall_history,
-                                    checkpointer,
-                                    tensorboard_callback])
+                                    checkpointer])
 
     loss, val_pr = save_metrics(hist, precision_recall_history,
                                 records_path=records_path)
