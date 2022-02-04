@@ -131,6 +131,7 @@ def construct_training_set(genome_sizes_file, genome_fasta_file, peaks_file, bla
     # get the coordinates for training samples
     train_coords = define_training_coordinates(chip_seq_coordinates, genome_sizes_file, acc_bdt, curr_genome_bdt,
                                 blacklist_bdt, window_length, len(chip_seq_coordinates)*5, [500, -500], None, None)
+    train_coords.to_csv(out_prefix + ".bed", header=False, index=False, sep="\t")
 
     # get fasta sequence and chromatin coverage according to the coordinates
     # write TFRecord output
@@ -160,6 +161,7 @@ def construct_test_set(genome_sizes_file, genome_fasta_file, peaks_file, blackli
                                 .assign(label=0, type="neg_chop"))
     
     test_coords = pd.concat([bound_chip_peaks, unbound_genome_chop])
+    test_coords.to_csv(out_prefix + ".bed", header=False, index=False, sep="\t")
 
     # write TFRecord output
     TFRecord_file = utils.get_data_TFRecord(test_coords, genome_fasta_file, chromatin_track_list, 

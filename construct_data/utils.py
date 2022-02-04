@@ -283,19 +283,13 @@ def get_data_TFRecord(coords, genome_fasta, chromatin_tracks, nbins, outprefix, 
     Then save in **TFReocrd** format
     """
 
-    # get pointer
-    genome_pyfasta = pyfasta.Fasta(genome_fasta)
-
     # split coordinates and assign chunks to workers
-    #num_chunks = math.ceil(len(coords) / 7000)
-    num_chunks = numProcessors 
+    num_chunks = math.ceil(len(coords) / 7000)
     chunks = np.array_split(coords, num_chunks)
     get_data_TFRecord_worker_freeze = functools.partial(get_data_TFRecord_worker, 
-                                                    fasta=genome_pyfasta, nbins=nbins, 
+                                                    fasta=genome_fasta, nbins=nbins, 
                                                     bigwig_files=chromatin_tracks, reverse=reverse)
 
-    print([outprefix + "_" + str(i) for i in range(numProcessors)])
-    
     pool = Pool(numProcessors)
     res = pool.starmap_async(get_data_TFRecord_worker_freeze, zip(chunks, [outprefix + "_" + str(i) for i in range(num_chunks)]))
     res = res.get()
@@ -304,6 +298,7 @@ def get_data_TFRecord(coords, genome_fasta, chromatin_tracks, nbins, outprefix, 
 
 def get_data_TFRecord_worker(coords, outprefix, fasta, bigwig_files, nbins, reverse=False):
 
+    genome_pyfasta = pyfasta.Fasta(fasta)
     bigwigs = [pyBigWig.open(bw) for bw in bigwig_files]
 
     # Reference: https://stackoverflow.com/questions/47861084/how-to-store-numpy-arrays-as-tfrecord
@@ -323,7 +318,7 @@ def get_data_TFRecord_worker(coords, outprefix, fasta, bigwig_files, nbins, reve
             feature_dict = defaultdict()
 
             # seq
-            seq = fasta[item.chrom][int(item.start):int(item.end)]
+            seq = genome_pyfasta[item.chrom][int(item.start):int(item.end)]
             if reverse:
                 seq = rev_comp(seq)
             seq_serialized = serialize_array(dna2onehot(seq))
@@ -349,6 +344,8 @@ def get_data_TFRecord_worker(coords, outprefix, fasta, bigwig_files, nbins, reve
             example = tf.train.Example(features=tf.train.Features(feature=feature_dict))
             writer.write(example.SerializeToString())
 
+    for bw in bigwigs: bw.close()
+    
     return TFRecord_file
 
 def dna2onehot(dnaSeq):
