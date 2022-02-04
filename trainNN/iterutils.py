@@ -121,7 +121,7 @@ def train_generator_h5(h5file, dspath, batchsize, seqlen, dtype, iterflag):
 
 def train_TFRecord_dataset(dspath, batchsize, dataflag):
     
-    raw_dataset = tf.data.TFRecordDataset(dspath["TFRecord"])
+    #raw_dataset = tf.data.TFRecordDataset(dspath["TFRecord"])
 
     # prepare feature description
     feature_description = defaultdict()
@@ -154,11 +154,13 @@ def train_TFRecord_dataset(dspath, batchsize, dataflag):
     def _parse_function_wrapper(example_proto):
         return _parse_function(example_proto, dataflag)
 
-    parsed_dataset = raw_dataset.map(_parse_function_wrapper, num_parallel_calls=20)
-    options = tf.data.Options()
-    options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.FILE
-    parsed_dataset = parsed_dataset.with_options(options)
+    files = tf.data.Dataset.from_tensors(dspath["TFRecord"])
+    parsed_dataset = (files.interleave(tf.data.TFRecordDataset, num_parallel_calls=tf.data.AUTOTUNE)
+                            .shuffle(100)
+                            .map(_parse_function_wrapper, num_parallel_calls=tf.data.AUTOTUNE)
+                            .batch(batchsize, drop_remainder=True)
+                            .prefetch(tf.data.AUTOTUNE))
 
-    return parsed_dataset.batch(batchsize)
+    return parsed_dataset
 
     

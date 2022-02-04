@@ -69,6 +69,7 @@ class PrecisionRecall(Callback):
     def __init__(self, val_data):
         super().__init__()
         self.validation_data = val_data
+        self.labels = np.concatenate([i for i in self.validation_data.map(lambda x,y: y, num_parallel_calls=tf.data.AUTOTUNE)])
 
     def on_train_begin(self, logs=None):
         self.val_auprc = []
@@ -76,24 +77,10 @@ class PrecisionRecall(Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         """ monitor PR """
-        predictions = np.array([])
-        labels = np.array([])
-        # TODO: How to simplify this part
-        for x_vals, y_val in self.validation_data:
-            ds = []
-            for key, val in x_vals.items():
-                val = tf.data.Dataset.from_tensors(val)
-                options = tf.data.Options()
-                options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.FILE
-                val = val.with_options(options)
-                ds.append(val)
-            ds_zip = tf.data.Dataset.zip((tuple(ds),))
-            prediction = self.model.predict(ds_zip)
-            predictions = np.concatenate([predictions, prediction.flatten()])
-            labels = np.concatenate([labels, y_val])
-        aupr = auprc(labels, predictions)
+        predictions = np.concatenate([i for i in self.validation_data.map(lambda x,y: self.model(x, training=False),
+                                                                         num_parallel_calls=tf.data.AUTOTUNE)])
+        aupr = auprc(self.labels, predictions)
         self.val_auprc.append(aupr)
-
 
 def save_metrics(hist_object, pr_history, records_path):
     loss = hist_object.history['loss']
@@ -133,16 +120,16 @@ def transfer(train_path, val_path, basemodel, model,
     model.compile(loss='binary_crossentropy', optimizer=sgd)
 
     # Get train and validation data
-    train_dataset = TFdataset(train_path, batchsize, "all").prefetch(tf.data.AUTOTUNE)
-    val_dataset = TFdataset(val_path, batchsize, "all").prefetch(tf.data.AUTOTUNE)
+    train_dataset = TFdataset(train_path, batchsize, "all")
+    val_dataset = TFdataset(val_path, batchsize, "all")
     precision_recall_history = PrecisionRecall(val_dataset)
     checkpointer = ModelCheckpoint(records_path + 'model_epoch{epoch}.hdf5',
                                    verbose=1, save_best_only=False)
 
-    hist = model.fit_generator(train_dataset, epochs=15,
-                               validation_data=val_dataset,
-                               callbacks=[precision_recall_history,
-                                          checkpointer])
+    hist = model.fit(train_dataset, epochs=15,
+                    validation_data=val_dataset,
+                    callbacks=[precision_recall_history,
+                              checkpointer])
 
     loss, val_pr = save_metrics(hist_object=hist, pr_history=precision_recall_history,
                                 records_path=records_path)

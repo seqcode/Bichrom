@@ -9,6 +9,8 @@ from tensorflow.keras.callbacks import Callback
 from tensorflow.keras.callbacks import ModelCheckpoint
 from tensorflow.keras.optimizers import Adam
 
+import os
+#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 import tensorflow as tf
 
 # local imports
@@ -25,6 +27,7 @@ class PrecisionRecall(Callback):
     def __init__(self, val_data):
         super().__init__()
         self.validation_data = val_data
+        self.labels = np.concatenate([i for i in self.validation_data.map(lambda x,y: y, num_parallel_calls=tf.data.AUTOTUNE)])
 
     def on_train_begin(self, logs=None):
         self.val_auprc = []
@@ -32,18 +35,9 @@ class PrecisionRecall(Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         """ monitor PR """
-        predictions = np.array([])
-        labels = np.array([])
-        # TODO: How to simplify this part
-        for x_val, y_val in self.validation_data:
-            x_val = tf.data.Dataset.from_tensors(x_val)
-            options = tf.data.Options()
-            options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.FILE
-            x_val = x_val.with_options(options)
-            prediction = self.model.predict(x_val)
-            predictions = np.concatenate([predictions, prediction.flatten()])
-            labels = np.concatenate([labels, y_val])
-        aupr = auprc(labels, predictions)
+        predictions = np.concatenate([i for i in self.validation_data.map(lambda x,y: self.model(x, training=False),
+                                                                         num_parallel_calls=tf.data.AUTOTUNE)])
+        aupr = auprc(self.labels, predictions)
         self.val_auprc.append(aupr)
 
 
@@ -106,8 +100,8 @@ def train(model, train_path, val_path, batch_size,
     
     adam = Adam(learning_rate=0.001)
     model.compile(loss='binary_crossentropy', optimizer=adam)
-    train_dataset = TFdataset(train_path, batch_size, "seqonly").prefetch(tf.data.AUTOTUNE)
-    val_dataset = TFdataset(val_path, batch_size, "seqonly").prefetch(tf.data.AUTOTUNE)
+    train_dataset = TFdataset(train_path, batch_size, "seqonly")
+    val_dataset = TFdataset(val_path, batch_size, "seqonly")
 
     precision_recall_history = PrecisionRecall(val_dataset)
     # adding check-pointing
@@ -118,7 +112,7 @@ def train(model, train_path, val_path, batch_size,
     #                           patience=5)
     # training the model..
     hist = model.fit(train_dataset, epochs=15,
-                        validation_data=val_dataset,
+                        validation_data = val_dataset,
                         callbacks=[precision_recall_history,
                                     checkpointer])
 

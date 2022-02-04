@@ -21,7 +21,7 @@ def TFdataset(path, batchsize, dataflag):
     return TFdataset_batched
 
 
-def test_on_batch(TFdataset, model, outfile, mode):
+def test_on_batch(TFdataset, model, outfile):
     """
     Get probabilities for each test data point.
     The reason that this is implemented in a batch is because
@@ -33,28 +33,16 @@ def test_on_batch(TFdataset, model, outfile, mode):
         outfile (str): The outfile used for storing probabilities.
     Returns: None (Saves an output file with the probabilities for the test set )
     """
+
+    probas = np.concatenate([i for i in TFdataset.map(lambda x,y: model(x, training=False),
+                                                                         num_parallel_calls=tf.data.AUTOTUNE)])
+    true_labels = np.concatenate([i for i in TFdataset.map(lambda x,y: y, num_parallel_calls=tf.data.AUTOTUNE)])
     # erase the contents in outfile
     file = open(outfile, "w")
     file.close()
-
-    probas = np.array([])
-    true_labels = np.array([])
-    for x_vals, y_val in TFdataset:
-        if mode == 'seq_only':
-            X_test = tf.data.Dataset.from_tensors(x_vals["seq"])
-        else:
-            ds = [tf.data.Dataset.from_tensors(val) for key, val in x_vals.items()]
-            X_test = tf.data.Dataset.zip((tuple(ds),))
-        options = tf.data.Options()
-        options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.FILE
-        X_test = X_test.with_options(options)
-        batch_probas = model.predict(X_test)
-        # saving to file: 
-        with open(outfile, "a") as fh:
-            np.savetxt(fh, batch_probas)
-        # save predictions and true labels
-        probas = np.concatenate([probas, batch_probas.flatten()])
-        true_labels = np.concatenate([true_labels, y_val])
+    # saving to file: 
+    with open(outfile, "a") as fh:
+        np.savetxt(fh, probas)
     
     return true_labels, probas
 
@@ -96,10 +84,10 @@ def get_probabilities(path, model, outfile, mode):
          true labels (ndarray): True test-set labels
     """
     # Inputing a range of default values here, can be changed later.
-    dataset = TFdataset(path=path, batchsize=1000, dataflag="all")
+    dataset = TFdataset(path=path, batchsize=1000, dataflag=mode)
     # Load the keras model
     # model = load_model(model_file)
-    true_labels, probas = test_on_batch(dataset, model, outfile, mode)
+    true_labels, probas = test_on_batch(dataset, model, outfile)
 
     return true_labels, probas
 
@@ -130,11 +118,11 @@ def evaluate_models(path, probas_out_seq, probas_out_sc,
     true_labels, probas_seq = get_probabilities(path=path,
                                                 model=model_seq,
                                                 outfile=probas_out_seq,
-                                                mode='seq_only')
+                                                mode='seqonly')
 
     _, probas_sc = get_probabilities(path=path, 
                                      model=model_sc, outfile=probas_out_sc,
-                                     mode='sc')
+                                     mode='all')
 
     # Get the auROC and the auPRC for both M-SEQ and M-SC models:
     get_metrics(true_labels, probas_seq, records_files, 'MSEQ')
