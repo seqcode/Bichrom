@@ -288,7 +288,7 @@ def get_data_TFRecord(coords, genome_fasta, chromatin_tracks, nbins, outprefix, 
 
     # split coordinates and assign chunks to workers
     #num_chunks = math.ceil(len(coords) / 7000)
-    num_chunks = len(coords) 
+    num_chunks = numProcessors 
     chunks = np.array_split(coords, num_chunks)
     get_data_TFRecord_worker_freeze = functools.partial(get_data_TFRecord_worker, 
                                                     fasta=genome_pyfasta, nbins=nbins, 
