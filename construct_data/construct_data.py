@@ -485,6 +485,16 @@ def main():
 
     args = parser.parse_args()
 
+    if len(set.intersection(set(args.val_chroms), set(['chrM', 'chrUn']))) or len(set.intersection(set(args.test_chroms), set(['chrM', 'chrUn']))) :
+        print("Validation and Test Sets must not use chrM, chrUn")
+        print("Exiting..")
+        exit(1)
+
+    if len(set.intersection(set(args.val_chroms), set(args.test_chroms))):
+        print("Validation and Test Sets must not have any intersection")
+        print("Exiting..")
+        exit(1)
+
     if args.outdir[0] == '/':
         # The user has specified a full directory path for the output directory:
         out_dir_path = args.outdir
@@ -502,15 +512,6 @@ def main():
         # Specifying the full path in the yaml configuration file.
         out_dir_path = (str(dir_path.stdout, 'utf-8')).rstrip() + '/' + args.outdir
 
-    if len(set.intersection(set(args.val_chroms), set(['chrM', 'chrUn']))) or len(set.intersection(set(args.test_chroms), set(['chrM', 'chrUn']))) :
-        print("Validation and Test Sets must not use chrM, chrUn")
-        print("Exiting..")
-        exit(1)
-
-    if len(set.intersection(set(args.val_chroms), set(args.test_chroms))):
-        print("Validation and Test Sets must not have any intersection")
-        print("Exiting..")
-        exit(1)
 
     print('Creating output directory')
     call(['mkdir', args.outdir])
