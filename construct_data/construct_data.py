@@ -6,8 +6,8 @@ import pandas as pd
 from pybedtools import BedTool
 
 import logging
-#logging.basicConfig()
-#logging.getLogger().setLevel(logging.DEBUG)
+logging.basicConfig()
+logging.getLogger().setLevel(logging.DEBUG)
 
 # local imports
 import utils
@@ -130,7 +130,7 @@ def construct_training_set(genome_sizes_file, genome_fasta_file, peaks_file, bla
 
     # get the coordinates for training samples
     train_coords = define_training_coordinates(chip_seq_coordinates, genome_sizes_file, acc_bdt, curr_genome_bdt,
-                                blacklist_bdt, window_length, len(chip_seq_coordinates)*5, [500, -500], None, None)
+                                blacklist_bdt, window_length, len(chip_seq_coordinates)*5, [450, -450, 500, -500, 1250, -1250, 1750, -1750], None, None)
     train_coords.to_csv(out_prefix + ".bed", header=False, index=False, sep="\t")
 
     # get fasta sequence and chromatin coverage according to the coordinates
