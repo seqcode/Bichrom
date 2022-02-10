@@ -33,22 +33,24 @@ def define_training_coordinates(chip_coords: pd.DataFrame, genome_sizes_file: st
     # Then apply a random shift that returns 500 bp windows.
     # Create a BedTool object for further use.
     bound_sample_shift = (chip_coords.sample(n=bound_shift, replace=True)
-                                            .pipe(utils.make_random_shift, L))
+                                            .pipe(utils.make_random_shift, L)
+                                            .pipe(utils.clean_bed))
     bound_sample_bdt_obj = BedTool.from_dataframe(bound_sample_shift).intersect(blacklist_bdt, v=True)
     bound_sample_shift = bound_sample_bdt_obj.to_dataframe().assign(label=1, type="pos_shift")
 
-    bound_sample_acc_size = bound_sample_bdt_obj.intersect(acc_bdt, wa=True).count()
-    bound_sample_inacc_size = bound_shift - bound_sample_acc_size
+    bound_sample_acc_size = bound_sample_bdt_obj.intersect(acc_bdt, u=True).count()
+    bound_sample_inacc_size = bound_sample_bdt_obj.intersect(acc_bdt, v=True).count()
     
-    logging.info(f"Bound samples in accessible region: {bound_sample_acc_size}")
-    logging.info(f"Bound samples NOT in accessible region: {bound_sample_inacc_size}")
+    logging.info(f"Bound samples in total: {bound_sample_bdt_obj.count()}")
+    logging.info(f" Bound samples in accessible region: {bound_sample_acc_size}")
+    logging.info(f" Bound samples NOT in accessible region: {bound_sample_inacc_size}")
 
     # NEG. SAMPLES
     # note: the self.curr_genome_bed.fn contains only training chromosomes.
     # NEG. SAMPLES: FLANK
     if unbound_flank_dists is not None:
-        unbound_flank_df = pd.concat([utils.make_flank(chip_coords, L, dist) for dist in unbound_flank_dists])
-        unbound_flank_df = utils.clean_bed(unbound_flank_df)
+        unbound_flank_df = (pd.concat([utils.make_flank(chip_coords, L, dist) for dist in unbound_flank_dists])
+                                .pipe(utils.clean_bed))
         # remove negative flanking samples that happen to be overlapped with adjacent bound sites
         unbound_flank_df = (BedTool().from_dataframe(unbound_flank_df)
                                     .intersect(chip_coords_bdt, v=True)
@@ -103,10 +105,6 @@ def define_training_coordinates(chip_coords: pd.DataFrame, genome_sizes_file: st
     logging.info(f"training coordinates negative samples in inaccessible regions: {training_coords_neg_inacc.shape[0]}")
 
     training_coords = pd.concat([bound_sample_shift, training_coords_neg_acc, training_coords_neg_inacc])
-
-    # clean
-    #training_coords = training_coords[(training_coords['end'] - training_coords['start'] == 500)]
-    training_coords = utils.clean_bed(training_coords)
 
     # logging summary
     logging.debug(training_coords.groupby(["label", "type"]).size())
