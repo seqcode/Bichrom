@@ -6,8 +6,10 @@ def make_onehot(sequences, seq_length):
     """
     Converts a sequence string into a one-hot encoded array
     """
-    fd = {'A': [1, 0, 0, 0], 'T': [0, 1, 0, 0], 'G': [0, 0, 1, 0],
-          'C': [0, 0, 0, 1], 'N': [0, 0, 0, 0]}
+
+    fd = {'A' : [1, 0, 0, 0], 'T': [0,1,0,0], 'G' : [0,0,1,0],'C': [0,0,0, 1], 'N': [0,0,0,0],
+           'a' : [1, 0, 0, 0], 't': [0,1,0,0], 'g': [0,0,1,0], 'c': [0,0,0,1],
+           'n': [0,0,0,0]}
     onehot = [fd[base] for seq in sequences for base in seq]
     onehot_np = np.reshape(onehot, (-1, seq_length, 4))
     return onehot_np

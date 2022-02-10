@@ -35,6 +35,7 @@ def embed_data(model, seq_data, chromatin_data, outdir):
     """
     # Extract and save the embeddings of bound and unbound sets to file.
     embeddings = le.get_embeddings_low_mem(model, seq_data, chromatin_data)
+
     # Creating the outfile
     call(['mkdir', outdir])
     out_path = outdir + '/embeddings/'
@@ -43,7 +44,6 @@ def embed_data(model, seq_data, chromatin_data, outdir):
     np.savetxt(out_path + "latent_embeddings.txt", embeddings)
     # Plotting
     plot_2d_embeddings(out_path, embeddings)
-
 
 def plot_2d_embeddings(out_path, embedding):
     """
