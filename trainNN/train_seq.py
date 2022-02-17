@@ -76,9 +76,9 @@ def save_metrics(hist_object, pr_history, records_path):
     val_pr = pr_history.val_auprc
 
     # Saving the training metrics
-    np.savetxt(records_path + 'trainingLoss.txt', loss, fmt='%1.2f')
-    np.savetxt(records_path + 'valLoss.txt', val_loss, fmt='%1.2f')
-    np.savetxt(records_path + 'valPRC.txt', val_pr, fmt='%1.2f')
+    np.savetxt(records_path + 'trainingLoss.txt', loss, fmt='%1.4f')
+    np.savetxt(records_path + 'valLoss.txt', val_loss, fmt='%1.4f')
+    np.savetxt(records_path + 'valPRC.txt', val_pr, fmt='%1.4f')
     return loss, val_pr
 
 
