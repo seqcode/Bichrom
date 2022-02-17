@@ -115,8 +115,14 @@ def transfer(train_path, val_path, basemodel, model,
     # Making the base model layers non-trainable:
     for layer in basemodel.layers:
         layer.trainable = False
+    # Learning rate
+    initial_learning_rate = 0.01
+    decay_steps = 1.0
+    decay_rate = 1e-6
+    learning_rate_fn = tf.keras.optimizers.schedules.InverseTimeDecay(
+                        initial_learning_rate, decay_steps, decay_rate)
     # Training rest of the model.
-    sgd = SGD(learning_rate=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+    sgd = SGD(learning_rate=learning_rate_fn, momentum=0.9, nesterov=True)
     model.compile(loss='binary_crossentropy', optimizer=sgd)
 
     # Get train and validation data
