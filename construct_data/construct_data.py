@@ -190,9 +190,9 @@ def main():
 
     parser.add_argument('-blacklist', default=None, help='Optional, blacklist file for the genome of interest')
 
-    parser.add_argument('-val_chroms', default='chr11', nargs='+', help='A list of chromosomes to use for the validation set.')
+    parser.add_argument('-val_chroms', default=['chr11'], nargs='+', help='A list of chromosomes to use for the validation set.')
 
-    parser.add_argument('-test_chroms', default='chr17', nargs='+', help='A list of chromosomes to use for the test set')
+    parser.add_argument('-test_chroms', default=['chr17'], nargs='+', help='A list of chromosomes to use for the test set')
 
     args = parser.parse_args()
 
