@@ -95,12 +95,11 @@ def run_bimodal_network(train_path, val_path, records_path, base_seq_model_path,
 
 def train_bichrom(data_paths, outdir, seq_len, bin_size):
     # Train the sequence-only network (M-SEQ)
-    mseq_path = run_seq_network(train_path=data_paths['train'], val_path=data_paths['val'],
+    mseq_path = run_seq_network(train_path=data_paths['train_seq'], val_path=data_paths['val'],
                            records_path=outdir, seq_len=seq_len)
 
-    no_of_chromatin_tracks = len(data_paths['train']['chromatin_tracks'])
     # Train the bimodal network (M-SC)
-    msc_path = run_bimodal_network(train_path=data_paths['train'],
+    msc_path = run_bimodal_network(train_path=data_paths['train_bichrom'],
                               val_path=data_paths['val'], records_path=outdir,
                               base_seq_model_path=mseq_path, bin_size=bin_size, seq_len=seq_len)
 

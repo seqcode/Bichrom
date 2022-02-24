@@ -36,14 +36,14 @@ def define_training_coordinates(chip_coords: pd.DataFrame, genome_sizes_file: st
                                             .pipe(utils.make_random_shift, L)
                                             .pipe(utils.clean_bed))
     bound_sample_bdt_obj = BedTool.from_dataframe(bound_sample_shift).intersect(blacklist_bdt, v=True)
-    bound_sample_shift = bound_sample_bdt_obj.to_dataframe().assign(label=1, type="pos_shift")
+    bound_sample_shift = bound_sample_bdt_obj.to_dataframe().assign(type="pos_shift", label=1)
 
     bound_sample_acc_size = bound_sample_bdt_obj.intersect(acc_bdt, u=True).count()
     bound_sample_inacc_size = bound_sample_bdt_obj.intersect(acc_bdt, v=True).count()
     
-    logging.info(f"Bound samples in total: {bound_sample_bdt_obj.count()}")
-    logging.info(f" Bound samples in accessible region: {bound_sample_acc_size}")
-    logging.info(f" Bound samples NOT in accessible region: {bound_sample_inacc_size}")
+    logging.debug(f"Bound samples in total: {bound_sample_bdt_obj.count()}")
+    logging.debug(f" Bound samples in accessible region: {bound_sample_acc_size}")
+    logging.debug(f" Bound samples NOT in accessible region: {bound_sample_inacc_size}")
 
     # NEG. SAMPLES
     # note: the self.curr_genome_bed.fn contains only training chromosomes.
@@ -54,8 +54,9 @@ def define_training_coordinates(chip_coords: pd.DataFrame, genome_sizes_file: st
         # remove negative flanking samples that happen to be overlapped with adjacent bound sites
         unbound_flank_df = (BedTool().from_dataframe(unbound_flank_df)
                                     .intersect(chip_coords_bdt, v=True)
+                                    .intersect(blacklist_bdt, v=True)
                                     .to_dataframe()
-                                    .assign(label=0, type="neg_flank"))
+                                    .assign(type="neg_flank", label=0))
 
         logging.debug(f"# Unbound flank sample: {unbound_flank_df.shape[0]}")
     else:
@@ -67,51 +68,64 @@ def define_training_coordinates(chip_coords: pd.DataFrame, genome_sizes_file: st
     # NEG. SAMPLES: ACCESSIBLE
     unbound_acc_df = (utils.random_coords(gs=genome_sizes_file,
                                         l=L, 
-                                        n=bound_sample_acc_size if unbound_random_acc is None else unbound_random_acc,
+                                        n=bound_sample_acc_size if unbound_random_acc is None else unbound_random_acc,  # if unbound_random_acc not set, use # bound samples intersected with acc
                                         incl=acc_bdt.intersect(curr_genome_bdt),
-                                        excl=chip_coords_bdt)
-                            .assign(label=0, type="neg_acc"))
+                                        excl=chip_coords_bdt.cat(blacklist_bdt))
+                            .assign(type="neg_acc", label=0))
 
     logging.debug(f"# Unbound accessible sample: {unbound_acc_df.shape[0]}")
 
     # NEG. SAMPLES: INACCESSIBLE
     unbound_inacc_df = (utils.random_coords(gs=genome_sizes_file,
-                                            l=L, n=bound_sample_inacc_size if unbound_random_inacc is None else unbound_random_inacc,
+                                            l=L, n=bound_sample_inacc_size if unbound_random_inacc is None else unbound_random_inacc, # if unbound_random_acc not set, use # bound samples intersected with inacc
                                             incl=curr_genome_bdt,
-                                            excl=acc_bdt.cat(chip_coords_bdt))
-                                .assign(label=0, type="neg_inacc"))
+                                            excl=acc_bdt.cat(chip_coords_bdt).cat(blacklist_bdt))
+                                .assign(type="neg_inacc", label=0))
 
     logging.debug(f"# Unbound inaccessible sample: {unbound_inacc_df.shape[0]}")
 
+    # NEG. SAMPLES: ACROSS WHOLE GENOME 
+    # This negative sets will be used for chromatin network training
+    unbound_genome_df = (utils.random_coords(gs=genome_sizes_file,
+                                            l=L, n=bound_sample_bdt_obj.count(),
+                                            incl=curr_genome_bdt,
+                                            excl=chip_coords_bdt.cat(blacklist_bdt))
+                                .assign(type="neg_genome", label=0))
+
+    # TRAINING SET FOR SEQ NETWORK
+    logging.info("Constructing training set for sequence network")
+    logging.info("It should satisfy two requirements: 1. Positive and Negative sample size should equal 2. Ratio of accessible region intersection should be balanced")
     # concatenate all types of negative samples
-    training_coords_neg = pd.concat([unbound_flank_df, unbound_acc_df, unbound_inacc_df])
+    training_coords_seq_neg = pd.concat([unbound_flank_df, unbound_acc_df, unbound_inacc_df])
 
     # balance ratio of positive and negative samples in accessible regions
-    training_coords_neg_acc = (BedTool.from_dataframe(training_coords_neg)
-                                        .intersect(blacklist_bdt, v=True)
+    training_coords_seq_neg_acc = (BedTool.from_dataframe(training_coords_seq_neg)
                                         .intersect(acc_bdt, wa=True)
                                         .to_dataframe()
                                         .sample(n=bound_sample_acc_size)
-                                        .rename(columns={"name": "label", "score": "type"}))
+                                        .rename(columns={"name": "type", "score": "label"}))
     
-    training_coords_neg_inacc = (BedTool.from_dataframe(training_coords_neg)
-                                        .intersect(blacklist_bdt, v=True)
+    training_coords_seq_neg_inacc = (BedTool.from_dataframe(training_coords_seq_neg)
                                         .intersect(acc_bdt, v=True)
                                         .to_dataframe()
                                         .sample(n=bound_sample_inacc_size)
-                                        .rename(columns={"name": "label", "score": "type"}))
+                                        .rename(columns={"name": "type", "score": "label"}))
 
-    logging.info(f"training coordinates negative samples in accessible regions: {training_coords_neg_acc.shape[0]}")
-    logging.info(f"training coordinates negative samples in inaccessible regions: {training_coords_neg_inacc.shape[0]}")
+    logging.debug(f"training coordinates negative samples in accessible regions: {training_coords_seq_neg_acc.shape[0]}")
+    logging.debug(f"training coordinates negative samples in inaccessible regions: {training_coords_seq_neg_inacc.shape[0]}")
 
-    training_coords = pd.concat([bound_sample_shift, training_coords_neg_acc, training_coords_neg_inacc])
+    training_coords_seq = pd.concat([bound_sample_shift, training_coords_seq_neg_acc, training_coords_seq_neg_inacc])
+    training_coords_seq = training_coords_seq.sample(frac=1) # randomly shuffle the dataFrame
+
+    # TRAINING SET FOR BICHROM NETWORK
+    training_coords_bichrom = pd.concat([bound_sample_shift, unbound_genome_df])
+    training_coords_bichrom = training_coords_bichrom.sample(frac=1) # randomly shuffle the dataFrame
 
     # logging summary
-    logging.debug(training_coords.groupby(["label", "type"]).size())
+    logging.debug(training_coords_seq.groupby(["label", "type"]).size())
+    logging.debug(training_coords_bichrom.groupby(["label", "type"]).size())
 
-    # randomly shuffle the dataFrame
-    training_coords = training_coords.sample(frac=1)
-    return training_coords
+    return training_coords_seq, training_coords_bichrom
 
 def construct_training_set(genome_sizes_file, genome_fasta_file, peaks_file, blacklist_file, to_keep, to_filter,
                             window_length, acc_regions_file, out_prefix, chromatin_track_list, nbins, p=1):
@@ -127,18 +141,23 @@ def construct_training_set(genome_sizes_file, genome_fasta_file, peaks_file, bla
     blacklist_bdt = BedTool(blacklist_file)
 
     # get the coordinates for training samples
-    train_coords = define_training_coordinates(chip_seq_coordinates, genome_sizes_file, acc_bdt, curr_genome_bdt,
+    train_coords_seq, train_coords_bichrom = define_training_coordinates(chip_seq_coordinates, genome_sizes_file, acc_bdt, curr_genome_bdt,
                                 blacklist_bdt, window_length, len(chip_seq_coordinates)*5, [450, -450, 500, -500, 1250, -1250, 1750, -1750], None, None)
-    train_coords.to_csv(out_prefix + ".bed", header=False, index=False, sep="\t")
+    train_coords_seq.to_csv(out_prefix + "_seq.bed", header=False, index=False, sep="\t")
+    train_coords_bichrom.to_csv(out_prefix + "_bichrom.bed", header=False, index=False, sep="\t")
 
     # get fasta sequence and chromatin coverage according to the coordinates
     # write TFRecord output
-    TFRecord_file_f = utils.get_data_TFRecord(train_coords, genome_fasta_file, chromatin_track_list, 
-                            nbins, outprefix=out_prefix + "_forward" ,reverse=False, numProcessors=p)
-    TFRecord_file_r = utils.get_data_TFRecord(train_coords, genome_fasta_file, chromatin_track_list, 
-                            nbins, outprefix=out_prefix + "_reverse",reverse=True, numProcessors=p)
+    TFRecord_file_seq_f = utils.get_data_TFRecord(train_coords_seq, genome_fasta_file, chromatin_track_list, 
+                            nbins, outprefix=out_prefix + "_seq_forward" ,reverse=False, numProcessors=p)
+    TFRecord_file_seq_r = utils.get_data_TFRecord(train_coords_seq, genome_fasta_file, chromatin_track_list, 
+                            nbins, outprefix=out_prefix + "_seq_reverse",reverse=True, numProcessors=p)
+    TFRecord_file_bichrom_f = utils.get_data_TFRecord(train_coords_bichrom, genome_fasta_file, chromatin_track_list, 
+                         nbins, outprefix=out_prefix + "_bichrom_forward" ,reverse=False, numProcessors=p)
+    TFRecord_file_bichrom_r = utils.get_data_TFRecord(train_coords_bichrom, genome_fasta_file, chromatin_track_list, 
+                            nbins, outprefix=out_prefix + "_bichrom_reverse",reverse=True, numProcessors=p)
     
-    return (TFRecord_file_r + TFRecord_file_f)
+    return TFRecord_file_seq_f + TFRecord_file_seq_r, TFRecord_file_bichrom_f + TFRecord_file_bichrom_r
 
 def construct_test_set(genome_sizes_file, genome_fasta_file, peaks_file, blacklist_file, to_keep,
                         window_length, stride, out_prefix, chromatin_track_list, nbins, p=1):
@@ -229,7 +248,7 @@ def main():
     print([x.split('/')[-1].split('.')[0] for x in args.chromtracks])
 
     print('Constructing train data ...')
-    TFRecords_train = construct_training_set(genome_sizes_file=args.info, genome_fasta_file=args.fa,
+    TFRecords_train_seq, TFRecords_train_bichrom = construct_training_set(genome_sizes_file=args.info, genome_fasta_file=args.fa,
                                     peaks_file=args.peaks,
                                     blacklist_file=args.blacklist, window_length=args.len,
                                     acc_regions_file=args.acc_domains,
@@ -260,10 +279,14 @@ def main():
                         chromatin_track_list=args.chromtracks, nbins=args.nbins, p=args.p)
 
     # Produce a default yaml file recording the output
-    yml_training_schema = {'train': {'seq': 'seq',
+    yml_training_schema = {'train_seq': {'seq': 'seq',
                                      'labels': 'labels',
                                      'chromatin_tracks': args.chromtracks,
-                                     'TFRecord': TFRecords_train},
+                                     'TFRecord': TFRecords_train_seq},
+                           'train_bichrom': {'seq': 'seq',
+                                     'labels': 'labels',
+                                     'chromatin_tracks': args.chromtracks,
+                                     'TFRecord': TFRecords_train_bichrom},
                            'val':   {'seq': 'seq',
                                      'labels': 'labels',
                                      'chromatin_tracks': args.chromtracks,
