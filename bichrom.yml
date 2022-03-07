@@ -3,14 +3,18 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - python==3.9.5
-  - keras==2.6.0
+  - python=3.9.5
+  - yaml=0.2.5
   - matplotlib
   - numpy
-  - scikit-learn
-  - scipy
-  - tensorflow-gpu==2.6.2
+  - scikit-learn=1.0.2
+  - scipy=1.7.3
   - pybedtools
   - pybigwig
   - pyfasta
   - pandas
+  # NN
+  - tensorflow-gpu==2.6.2
+  - cudnn=8.2
+  - cudatoolkit=11.6
+  - keras=2.6.0
