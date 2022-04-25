@@ -325,19 +325,19 @@ def get_data_TFRecord_worker(coords, outprefix, fasta, bigwig_files, nbins, reve
             feature_dict["seq"] = _bytes_feature(seq_serialized)
 
             # chromatin track
-            for idx, bigwig in enumerate(bigwigs):
-                try:
+            try:
+                for idx, bigwig in enumerate(bigwigs):
                     m = (np.nan_to_num(bigwig.values(item.chrom, item.start, item.end))
-                                        .reshape((nbins, -1))
-                                        .mean(axis=1, dtype=float))
-                except RuntimeError as e:
-                    logging.warning(e)
-                    logging.warning(f"Skip region: {item}")
-                    continue
-                if reverse:
-                    m = m[::-1] 
-                m_serialized = serialize_array(m)
-                feature_dict[bigwig_files[idx]] = _bytes_feature(m_serialized)
+                                            .reshape((nbins, -1))
+                                            .mean(axis=1, dtype=float))
+                    if reverse:
+                        m = m[::-1] 
+                    m_serialized = serialize_array(m)
+                    feature_dict[bigwig_files[idx]] = _bytes_feature(m_serialized)
+            except RuntimeError as e:
+                logging.warning(e)
+                logging.warning(f"Chromatin track {bigwig_files[idx]} doesn't have information in {item} Skip this region...")
+                continue
             # label
             feature_dict["label"] = tf.train.Feature(int64_list=tf.train.Int64List(value=[item.label]))
 
