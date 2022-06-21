@@ -26,7 +26,8 @@ def define_training_coordinates(chip_coords: pd.DataFrame, genome_sizes_file: st
 
     chip_coords_bdt = BedTool.from_dataframe(chip_coords.assign(start = lambda x: x["start"]-L/2,
                                                                 end = lambda x: x["end"]+L/2-1)
-                                                        .astype({"start": int, "end":int}))
+                                                        .astype({"start": int, "end":int})
+                                                        .pipe(utils.clean_bed))
 
     # POS. SAMPLES
     # Take a sample from the chip_coords file,
