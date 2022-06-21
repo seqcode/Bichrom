@@ -48,7 +48,7 @@ if __name__ == '__main__':
     #exit(1)
     mseq = load_model(args.mseq)
     msc = load_model(args.msc)
-    evaluate_models(sequence_len=seq_len, path=data_paths[args.dataset],
+    evaluate_models(path=data_paths[args.dataset],
                     probas_out_seq=probas_out_seq, probas_out_sc=probas_out_sc,
                     model_seq=mseq, model_sc=msc,
                     records_file_path=records_file_path)
