@@ -119,7 +119,7 @@ def train_generator_h5(h5file, dspath, batchsize, seqlen, dtype, iterflag):
             else:
                 yield ds[start_index:end_index]
 
-def train_TFRecord_dataset(dspath, batchsize, dataflag, shuffle=True):
+def train_TFRecord_dataset(dspath, batchsize, dataflag, shuffle=True, drop_remainder=True):
     
     #raw_dataset = tf.data.TFRecordDataset(dspath["TFRecord"])
 
@@ -158,7 +158,7 @@ def train_TFRecord_dataset(dspath, batchsize, dataflag, shuffle=True):
     parsed_dataset = files.interleave(tf.data.TFRecordDataset, num_parallel_calls=tf.data.AUTOTUNE)
     if shuffle: parsed_dataset = parsed_dataset.shuffle(100)
     parsed_dataset = (parsed_dataset.map(_parse_function_wrapper, num_parallel_calls=tf.data.AUTOTUNE)
-                                    .batch(batchsize, drop_remainder=True)
+                                    .batch(batchsize, drop_remainder=drop_remainder)
                                     .prefetch(tf.data.AUTOTUNE))
 
     return parsed_dataset
