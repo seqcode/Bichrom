@@ -16,7 +16,7 @@ from helper import plot_distributions
 
 def TFdataset(path, batchsize, dataflag):
 
-    TFdataset_batched = iterutils.train_TFRecord_dataset(path, batchsize, dataflag, shuffle=False)
+    TFdataset_batched = iterutils.train_TFRecord_dataset(path, batchsize, dataflag, shuffle=False, drop_remainder=False)
 
     return TFdataset_batched
 
