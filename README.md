@@ -1,8 +1,6 @@
 # Bichrom
 Bichrom provides a framework for modeling, interpreting, and visualizing the joint sequence and chromatin landscapes that determine TF-DNA binding dynamics.
 
-> WARNING: This branch is for predicting TF binding strength instead of bound/unbound, still under construction...
-
 ## Citation
 Srivastava, D., Aydin, B., Mazzoni, E.O. et al. An interpretable bimodal neural network characterizes the sequence and preexisting chromatin predictors of induced transcription factor binding. Genome Biol 22, 20 (2021). 
 https://doi.org/10.1186/s13059-020-02218-6
