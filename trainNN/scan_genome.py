@@ -92,18 +92,19 @@ def get_probabilities(path, model, outfile, mode):
     return true_labels, probas
 
 
-def plot_pr_curve(test_labels, test_probas, color):
+def plot_pr_curve(test_labels, test_probas, color, label):
     # Get the PR values:
     precision, recall, _ = precision_recall_curve(y_true=test_labels,
                                                   probas_pred=test_probas)
-    plt.plot(recall, precision, c=color, lw=2.5)
+    plt.plot(recall, precision, c=color, lw=2.5, label=label)
     plt.xticks(fontsize=14)
     plt.yticks(fontsize=14)
 
 
 def combine_pr_curves(records_file, m_seq_probas, m_sc_probas, labels):
-    plot_pr_curve(labels, m_seq_probas, color='#F1C40F')
-    plot_pr_curve(labels, m_sc_probas, color='#2471A3')
+    plot_pr_curve(labels, m_seq_probas, color='#F1C40F', label='Seqnet')
+    plot_pr_curve(labels, m_sc_probas, color='#2471A3', label='Bichrom')
+    plt.legend(loc='upper right')
     plt.savefig(records_file + '.pr_curves.pdf')
 
 
