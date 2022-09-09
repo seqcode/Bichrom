@@ -34,28 +34,31 @@ def dna2onehot(dnaSeq):
 
 def get_data(chunk, genome_pyfasta, bigwigs, nbins):
     seqs = []
-    ms = []
+    mss = []
     for item in chunk.itertuples():
         # get seq info
         seq = genome_pyfasta[item.chrom][int(item.start):int(item.end)]
         seq_onehot = dna2onehot(seq)
 
         # get chrom info
+        ms = []
         try:
             for idx, bigwig in enumerate(bigwigs):
                 m = (np.nan_to_num(bigwig.values(item.chrom, item.start, item.end))
                                         .reshape((nbins, -1))
                                         .mean(axis=1, dtype=float))
+                ms.append(m)
+            ms = np.concatenate(ms)
         except RuntimeError as e:
             logging.warning(e)
-            logging.warning(f"Chromatin track doesn't have information in {item} Skip this region...")
+            logging.warning(f"Chromatin track doesn't have information in {item}")
             raise e
 
         # store
-        seqs.append(seq_onehot); ms.append(m)
+        seqs.append(seq_onehot); mss.append(ms)
 
-    seqs = np.stack(seqs); ms = np.stack(ms)
-    return {"seq": seqs, "chrom_input": ms}
+    seqs = np.stack(seqs); mss = np.stack(mss)
+    return {"seq": seqs, "chrom_input": mss}
 
 def predict_generator(bed_file, fasta, bigwig_files, nbins, batchsize=128):
     """
