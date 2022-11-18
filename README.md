@@ -154,3 +154,54 @@ Bichrom output directory.
 
 ### 2-D Bichrom embeddings
 For 2-D latenet embeddings, please refer to the README in the ```Bichrom/latent_embeddings directory```
+
+### Moded Inference (Predict)
+Use `trainNN/predict_bed.py` to predict on user-provided regions
+
+```
+cd trainNN  
+To view help:   
+python predict_bed.py -h
+usage: run_bichrom.py [-h] -mseq MSEQ -msc MSC -fa FA -chromtracks CHROMTRACKS [CHROMTRACKS ...] 
+                           -nbins NBINS -prefix PREFIX -bed BED
+
+Use Bichrom model for prediction given bed file
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -mseq MSEQ            Sequence Model
+  -msc MSC              Bichrom Model
+  -fa FA                The fasta file for the genome of interest
+  -chromtracks CHROMTRACKS [CHROMTRACKS ...]
+                        A list of BigWig files for all input chromatin experiments, please follow the same order of training data
+  -nbins NBINS          Number of bins for chromatin tracks
+  -prefix PREFIX        Output prefix
+  -bed BED              bed file describing region used for prediction
+
+```
+  
+**Required arguments**: 
+
+**mseq**/**msc**
+
+Sequence-only/Bichrom model saved in HDF5 format
+
+**fa**
+
+Fasta file of the genome
+
+**chromtracks**
+
+Bigwig files used in `construct_data` step, **NOTE: Please provide the bigwig files in the exact same order as provided to construct_data.py**
+
+**nbins**
+
+Number of bins for binning, **NOTE: Please use the exactly same number as used in construct_data.py**
+
+**prefix**
+
+Prefix of the output predictions
+
+**bed**
+
+Bed file containing the regions for prediction
