@@ -162,7 +162,7 @@ Use `trainNN/predict_bed.py` to predict on user-provided regions
 cd trainNN  
 To view help:   
 python predict_bed.py -h
-usage: run_bichrom.py [-h] -mseq MSEQ -msc MSC -fa FA -chromtracks CHROMTRACKS [CHROMTRACKS ...] 
+usage: predict_bed.py [-h] -mseq MSEQ -msc MSC -fa FA -chromtracks CHROMTRACKS [CHROMTRACKS ...] 
                            -nbins NBINS -prefix PREFIX -bed BED
 
 Use Bichrom model for prediction given bed file
