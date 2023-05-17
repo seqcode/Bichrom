@@ -7,6 +7,7 @@ dependencies:
   - yaml=0.2.5
   - pyyaml
   - matplotlib
+  - seaborn
   - numpy
   - scikit-learn=1.0.2
   - scipy=1.7.3
